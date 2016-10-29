@@ -1,0 +1,9 @@
+TOOLCHAIN_PREFIX ?= arm-none-eabi
+AS               = $(TOOLCHAIN_PREFIX)-as
+CC               = $(TOOLCHAIN_PREFIX)-gcc
+CPP              = $(TOOLCHAIN_PREFIX)-cpp
+LD               = $(TOOLCHAIN_PREFIX)-gcc
+OBJCOPY          = $(TOOLCHAIN_PREFIX)-objcopy
+OBJDUMP          = $(TOOLCHAIN_PREFIX)-objdump
+SIZE             = $(TOOLCHAIN_PREFIX)-size
+GDB              = $(TOOLCHAIN_PREFIX)-gdb

@@ -1,0 +1,7 @@
+Release
+Debug
+*.ipch
+*.sdf
+*.vcxproj.user
+*.bak
+*.BAK
