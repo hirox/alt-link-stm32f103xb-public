@@ -1,5 +1,6 @@
 Release
 Debug
+build
 *.ipch
 *.sdf
 *.vcxproj.user
