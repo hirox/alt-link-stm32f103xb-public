@@ -70,11 +70,12 @@ uint32_t UserTxBufPtrIn = 0;/* Increment this pointer or roll it back to
                                start address when data are received over USART */
 uint32_t UserTxBufPtrOut = 0; /* Increment this pointer or roll it back to
                                  start address when data are sent over USB */
-volatile uint32_t Run_Transmit_DMA = 0;
+volatile uint32_t Run_Receive_From_HOST = 0;
 uint8_t *TransmitBuf = NULL;
 volatile uint32_t TransmitLen;
-volatile uint32_t Run_Receive_Packet = 0;
+volatile uint32_t Run_DMA_Transfer_Finished = 0;
 volatile uint32_t Run_TIM = 0;
+volatile uint32_t DMA_Transferring = 0;
 
 /* UART handler declaration */
 UART_HandleTypeDef UartHandle;
@@ -87,7 +88,7 @@ extern USBD_HandleTypeDef  USBD_Device;
 static int8_t CDC_Itf_Init     (void);
 static int8_t CDC_Itf_DeInit   (void);
 static int8_t CDC_Itf_Control  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
-static int8_t CDC_Itf_Receive  (uint8_t* pbuf, uint32_t *Len);
+static int8_t CDC_Itf_Receive  (uint8_t*, uint32_t);
 
 static void Error_Handler(void);
 static void ComPort_Config(void);
@@ -284,13 +285,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   * @param  Len: Number of data received (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
-static int8_t CDC_Itf_Receive(uint8_t* Buf, uint32_t *Len)
+static int8_t CDC_Itf_Receive(uint8_t* buf, uint32_t len)
 {
     // inside IRQ
 //    HAL_UART_Transmit_DMA(&UartHandle, Buf, *Len);
-    TransmitBuf = Buf;
-    TransmitLen = *Len;
-    Run_Transmit_DMA = 1;
+    TransmitBuf = buf;
+    TransmitLen = len;
+    Run_Receive_From_HOST = 1;
     return (USBD_OK);
 }
 
@@ -303,22 +304,24 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
     // inside IRQ
     /* Initiate next USB packet transfer once UART completes transfer (transmitting data over Tx line) */
-    Run_Receive_Packet = 1;
-//    USBD_CDC_ReceivePacket(&USBD_Device);
+    Run_DMA_Transfer_Finished = 1;
 }
 
 // noinline is necessary to output correct code
 __NOINLINE void CDC_Run_In_Thread_Mode()
 {
 #if 1
-    if (Run_Transmit_DMA) {
-        Run_Transmit_DMA = 0;
-        HAL_UART_Transmit_DMA(&UartHandle, TransmitBuf, TransmitLen);
+    if (Run_DMA_Transfer_Finished) {
+        Run_DMA_Transfer_Finished = 0;
+        DMA_Transferring = 0;
     }
-#endif
-#if 1
-    if (Run_Receive_Packet) {
-        Run_Receive_Packet = 0;
+    if (Run_Receive_From_HOST && DMA_Transferring == 0) {
+        Run_Receive_From_HOST = 0;
+        static uint8_t DMA_BUF[64];
+        memcpy(DMA_BUF, TransmitBuf, TransmitLen);
+        HAL_UART_Transmit_DMA(&UartHandle, DMA_BUF, TransmitLen);
+        DMA_Transferring = 1;
+
         USBD_CDC_ReceivePacket(&USBD_Device);
     }
 #endif

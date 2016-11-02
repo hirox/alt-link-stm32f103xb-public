@@ -64,46 +64,6 @@
 #include "usbd_ctlreq.h"
 
 
-/** @addtogroup STM32_USB_DEVICE_LIBRARY
-  * @{
-  */
-
-
-/** @defgroup USBD_CDC 
-  * @brief usbd core module
-  * @{
-  */ 
-
-/** @defgroup USBD_CDC_Private_TypesDefinitions
-  * @{
-  */ 
-/**
-  * @}
-  */ 
-
-
-/** @defgroup USBD_CDC_Private_Defines
-  * @{
-  */ 
-/**
-  * @}
-  */ 
-
-
-/** @defgroup USBD_CDC_Private_Macros
-  * @{
-  */ 
-
-/**
-  * @}
-  */ 
-
-
-/** @defgroup USBD_CDC_Private_FunctionPrototypes
-  * @{
-  */
-
-
 static uint8_t  *USBD_CDC_GetFSCfgDesc (uint16_t *length);
 
 static uint8_t  *USBD_CDC_GetHSCfgDesc (uint16_t *length);
@@ -228,7 +188,7 @@ uint8_t USBD_CDC_Setup (USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
   * @param  epnum: endpoint number
   * @retval status
   */
-uint8_t  USBD_CDC_DataIn (USBD_HandleTypeDef *pdev, uint8_t epnum)
+uint8_t  USBD_CDC_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
     USBD_CDC_HandleTypeDef   *hcdc = &cdcClassData;
 
@@ -244,17 +204,17 @@ uint8_t  USBD_CDC_DataIn (USBD_HandleTypeDef *pdev, uint8_t epnum)
   * @param  epnum: endpoint number
   * @retval status
   */
-uint8_t  USBD_CDC_DataOut (USBD_HandleTypeDef *pdev, uint8_t epnum)
+uint8_t  USBD_CDC_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {      
     USBD_CDC_HandleTypeDef   *hcdc = &cdcClassData;
-
+    
     /* Get the received data length */
-    hcdc->RxLength = USBD_LL_GetRxDataSize (pdev, epnum);
+    uint32_t len = USBD_LL_GetRxDataSize (pdev, epnum);
 
     /* USB data will be immediately processed, this allow next USB traffic being 
     NAKed till the end of the application Xfer */
 
-    USBD_CDC_fops.Receive(hcdc->RxBuffer, &hcdc->RxLength);
+    USBD_CDC_fops.Receive(hcdc->RxBuffer, len);
 
     return USBD_OK;
 }
@@ -262,13 +222,11 @@ uint8_t  USBD_CDC_DataOut (USBD_HandleTypeDef *pdev, uint8_t epnum)
 
 
 /**
-  * @brief  USBD_CDC_DataOut
-  *         Data received on non-control Out endpoint
+  * @brief  USBD_CDC_EP0_RxReady
   * @param  pdev: device instance
-  * @param  epnum: endpoint number
   * @retval status
   */
-uint8_t  USBD_CDC_EP0_RxReady (USBD_HandleTypeDef *pdev)
+uint8_t  USBD_CDC_EP0_RxReady(USBD_HandleTypeDef *pdev)
 { 
     USBD_CDC_HandleTypeDef   *hcdc = &cdcClassData;
 
@@ -325,10 +283,8 @@ uint8_t  USBD_CDC_SetRxBuffer  (uint8_t  *pbuff)
 }
 
 /**
-  * @brief  USBD_CDC_DataOut
-  *         Data received on non-control Out endpoint
+  * @brief  USBD_CDC_TransmitPacket
   * @param  pdev: device instance
-  * @param  epnum: endpoint number
   * @retval status
   */
 uint8_t  USBD_CDC_TransmitPacket(USBD_HandleTypeDef *pdev)
@@ -368,16 +324,5 @@ uint8_t  USBD_CDC_ReceivePacket(USBD_HandleTypeDef *pdev)
     USBD_LL_PrepareReceive(pdev, CDC_OUT_EP, hcdc->RxBuffer, CDC_DATA_FS_OUT_PACKET_SIZE);
     return USBD_OK;
 }
-/**
-  * @}
-  */ 
-
-/**
-  * @}
-  */ 
-
-/**
-  * @}
-  */ 
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
