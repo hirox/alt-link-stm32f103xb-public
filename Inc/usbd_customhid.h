@@ -140,6 +140,8 @@ uint8_t USBD_CUSTOM_HID_SendReport (USBD_HandleTypeDef *pdev,
 uint8_t  USBD_CUSTOM_HID_RegisterInterface  (USBD_HandleTypeDef   *pdev, 
                                              USBD_CUSTOM_HID_ItfTypeDef *fops);
 
+void HID_Run_In_Thread_Mode();
+
 /**
   * @}
   */ 

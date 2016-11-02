@@ -49,6 +49,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_it.h"    
+#include "usbd_cdc_interface.h"
 
 /** @addtogroup Validation_Project
   * @{
@@ -59,11 +60,12 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 extern PCD_HandleTypeDef hpcd;
-//extern USBD_HandleTypeDef USBD_Device;
-//extern ADC_HandleTypeDef AdcHandle;
-//extern uint32_t ADCConvertedValue;
-//extern uint32_t ADC_Prev_ConvertedValue;
-//extern uint8_t SendBuffer[2];
+
+/* UART handler declared in "usbd_cdc_interface.c" file */
+extern UART_HandleTypeDef UartHandle;
+
+/* TIM handler declared in "usbd_cdc_interface.c" file */
+extern TIM_HandleTypeDef TimHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -187,40 +189,36 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
   HAL_PCD_IRQHandler(&hpcd);
 }
 
-/**
-  * @brief  This function handles External lines 10-15 interrupt request.
-  * @param  None
-  * @retval None
-  */
-void EXTI9_5_IRQHandler(void)
-{
-  HAL_GPIO_EXTI_IRQHandler(123/*KEY_BUTTON_PIN*/);
-}
 
 /**
   * @brief  This function handles DMA interrupt request.
   * @param  None
   * @retval None
   */
-  /*
-void DMA1_Channel1_IRQHandler(void)
+void USARTx_DMA_TX_IRQHandler(void)
 {
-  HAL_DMA_IRQHandler(AdcHandle.DMA_Handle);
-  SendBuffer[0] = ADC_REPORT_ID;
-  
-  if(abs((ADCConvertedValue >>4) - (ADC_Prev_ConvertedValue >>4)) > 4)
-  {
-    SendBuffer[1] = (uint8_t)(ADCConvertedValue >>4);
-    
-    USBD_CUSTOM_HID_SendReport (&USBD_Device, SendBuffer, 2);
-    
-    ADC_Prev_ConvertedValue = ADCConvertedValue;
-  }
-}*/
+  HAL_DMA_IRQHandler(UartHandle.hdmatx);
+}
 
 /**
-  * @}
-  */ 
+  * @brief  This function handles UART interrupt request.  
+  * @param  None
+  * @retval None
+  */
+void USARTx_IRQHandler(void)
+{
+  HAL_UART_IRQHandler(&UartHandle);
+}
+
+/**
+  * @brief  This function handles TIM interrupt request.
+  * @param  None
+  * @retval None
+  */
+void TIMx_IRQHandler(void)
+{
+  HAL_TIM_IRQHandler(&TimHandle);
+}
 
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

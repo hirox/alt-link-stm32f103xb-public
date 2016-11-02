@@ -110,6 +110,7 @@ typedef enum
                                 do{                                        \
                                     if((__HANDLE__)->Lock == HAL_LOCKED)  \
                                     {                                      \
+                                       *(uint32_t *)0 = 0;                 \
                                        return HAL_BUSY;                    \
                                     }                                      \
                                     else                                   \

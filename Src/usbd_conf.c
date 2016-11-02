@@ -47,6 +47,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "usbd_cdc.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -236,6 +237,8 @@ void HAL_PCD_DisconnectCallback(PCD_HandleTypeDef *hpcd)
                        LL Driver Interface (USB Device Library --> PCD)
 *******************************************************************************/
 
+#define PMA_ADDR_BASE (4 * 8)
+
 /**
   * @brief  Initializes the Low Level portion of the Device driver.
   * @param  pdev: Device handle
@@ -258,10 +261,13 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   /* Initialize LL Driver */
   HAL_PCD_Init((PCD_HandleTypeDef*)pdev->pData);
 
-  HAL_PCDEx_PMAConfig(pdev->pData , 0x00 , PCD_SNG_BUF, 0x18);
-  HAL_PCDEx_PMAConfig(pdev->pData , 0x80 , PCD_SNG_BUF, 0x58);
-  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPIN_ADDR , PCD_SNG_BUF, 0x98);  
-  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPOUT_ADDR , PCD_SNG_BUF, 0xD8);
+  HAL_PCDEx_PMAConfig(pdev->pData , 0x00 , PCD_SNG_BUF, PMA_ADDR_BASE);
+  HAL_PCDEx_PMAConfig(pdev->pData , 0x80 , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40);
+  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPIN_ADDR , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 2);  
+  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPOUT_ADDR , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 3);
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_IN_EP , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 4);  
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_OUT_EP , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 5);
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_CMD_EP , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 6);
 
   return USBD_OK;
 }
@@ -453,27 +459,6 @@ uint32_t USBD_LL_GetRxDataSize(USBD_HandleTypeDef *pdev, uint8_t ep_addr)
 void USBD_LL_Delay(uint32_t Delay)
 {
   HAL_Delay(Delay);
-}
-
-/**
-  * @brief  static single allocation.
-  * @param  size: size of allocated memory
-  * @retval None
-  */
-void *USBD_static_malloc(uint32_t size)
-{
-  static uint32_t mem[MAX_STATIC_ALLOC_SIZE];
-  return mem;
-}
-
-/**
-  * @brief  Dummy memory free
-  * @param  *p pointer to allocated  memory address
-  * @retval None
-  */
-void USBD_static_free(void *p)
-{
-
 }
 
 /**

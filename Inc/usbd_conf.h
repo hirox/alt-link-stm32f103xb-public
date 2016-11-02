@@ -77,17 +77,6 @@
 /* For footprint reasons and since only one allocation is handled in the HID class
    driver, the malloc/free is changed into a static allocation method */
 
-void *USBD_static_malloc(uint32_t size);
-void USBD_static_free(void *p);
-
-#define MAX_STATIC_ALLOC_SIZE     10 /* Custom HID Class Driver Structure size */
-
-#define USBD_malloc               (uint32_t *)USBD_static_malloc
-#define USBD_free                 USBD_static_free
-#define USBD_memset               /* Not used */
-#define USBD_memcpy               /* Not used */
-
-
 /* DEBUG macros */
 #if (USBD_DEBUG_LEVEL > 0)
 #define  USBD_UsrLog(...)   printf(__VA_ARGS__);\

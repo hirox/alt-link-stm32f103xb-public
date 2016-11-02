@@ -47,6 +47,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "usbd_cdc.h"
+#include "usbd_customhid.h"
 
 
 /** @addtogroup STM32F1xx_HAL_Validation
@@ -76,34 +78,27 @@ static void Error_Handler(void);
   */
 int main(void)
 {
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    HAL_Init();
 
-  /* Initialize LEDs */
-/*  BSP_LED_Init(LED1);
-  BSP_LED_Init(LED2);
-  BSP_LED_Init(LED3);
-  BSP_LED_Init(LED4);*/
+    /* Configure the system clock to 72 MHz */
+    SystemClock_Config();
 
-  /* Configure the system clock to 72 MHz */
-  SystemClock_Config();
+    /* Init Device Library */
+    USBD_Init(&USBD_Device, &HID_Desc, 0);
 
-  /* Init Device Library */
-  USBD_Init(&USBD_Device, &HID_Desc, 0);
+    /* Add Supported Class */
+    USBD_RegisterClass(&USBD_Device, &USBD_CUSTOM_HID);
 
-  /* Add Supported Class */
-  USBD_RegisterClass(&USBD_Device, &USBD_CUSTOM_HID);
+    /* Start Device Process */
+    USBD_Start(&USBD_Device);
 
-  /* Add Custom HID callbacks */
-  USBD_CUSTOM_HID_RegisterInterface(&USBD_Device, &USBD_CustomHID_fops);
-
-  /* Start Device Process */
-  USBD_Start(&USBD_Device);
-  
-  /* Infinite loop */
-  while (1)
-  {
-  }
+    /* Infinite loop */
+    while (1)
+    {
+        HID_Run_In_Thread_Mode();
+        CDC_Run_In_Thread_Mode();
+    }
 }
 
 /**

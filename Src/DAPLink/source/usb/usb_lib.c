@@ -2228,7 +2228,7 @@ const U8 USBD_OtherSpeedConfigDescriptor_HS[] = {
 
 /* USB Device Create String Descriptor */
 #define USBD_STR_DEF(n)                 \
-  struct {                              \
+  __packed struct {                              \
     U8  len;                            \
     U8  type;                           \
     wchar_t str[sizeof(USBD_##n)/2-1];      \
@@ -2238,8 +2238,8 @@ const U8 USBD_OtherSpeedConfigDescriptor_HS[] = {
  { sizeof(USBD_##n), USB_STRING_DESCRIPTOR_TYPE, USBD_##n }
 
 __weak \
-const struct {
-    struct {
+const __packed struct {
+    __packed struct {
         U8  len;
         U8  type;
         U16 langid;
