@@ -436,15 +436,6 @@ HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData,
     huart->RxXferCount = Size;
 
     huart->ErrorCode = HAL_UART_ERROR_NONE;
-    /* Check if a transmit process is ongoing or not */
-    /*if(huart->State == HAL_UART_STATE_BUSY_TX)
-    {
-      huart->State = HAL_UART_STATE_BUSY_TX_RX;
-    }
-    else
-    {
-      huart->State = HAL_UART_STATE_BUSY_RX;
-    }*/
     huart->StateRx = HAL_UART_STATE_BUSY_RX;
 
     /* Process Unlocked */
@@ -497,15 +488,7 @@ HAL_StatusTypeDef HAL_UART_Transmit_DMA(UART_HandleTypeDef *huart, uint8_t *pDat
     huart->TxXferCount = Size;
 
     huart->ErrorCode = HAL_UART_ERROR_NONE;
-    /* Check if a receive process is ongoing or not */
-/*    if(huart->State == HAL_UART_STATE_BUSY_RX)
-    {
-      huart->State = HAL_UART_STATE_BUSY_TX_RX;
-    }
-    else
-    {*/
-      huart->State = HAL_UART_STATE_BUSY_TX;
-    //}
+    huart->State = HAL_UART_STATE_BUSY_TX;
 
     /* Set the UART DMA transfer complete callback */
     huart->hdmatx->XferCpltCallback = UART_DMATransmitCplt;
@@ -807,15 +790,7 @@ static void UART_DMAReceiveCplt(DMA_HandleTypeDef *hdma)
        in the UART CR3 register */
     CLEAR_BIT(huart->Instance->CR3, USART_CR3_DMAR);
 
-    /* Check if a transmit process is ongoing or not */
-    /*if(huart->State == HAL_UART_STATE_BUSY_TX_RX) 
-    {
-      huart->State = HAL_UART_STATE_BUSY_TX;
-    }
-    else
-    {*/
-      huart->StateRx = HAL_UART_STATE_READY;
-    //}
+    huart->StateRx = HAL_UART_STATE_READY;
   }
   HAL_UART_RxCpltCallback(huart);
 }
@@ -909,22 +884,14 @@ static HAL_StatusTypeDef UART_Transmit_IT(UART_HandleTypeDef *huart)
   */
 static HAL_StatusTypeDef UART_EndTransmit_IT(UART_HandleTypeDef *huart)
 {
-  /* Disable the UART Transmit Complete Interrupt */    
-  __HAL_UART_DISABLE_IT(huart, UART_IT_TC);
-  
-  /* Check if a receive process is ongoing or not */
-  /*if(huart->State == HAL_UART_STATE_BUSY_TX_RX) 
-  {
-    huart->State = HAL_UART_STATE_BUSY_RX;
-  }
-  else
-  {*/
+    /* Disable the UART Transmit Complete Interrupt */
+    __HAL_UART_DISABLE_IT(huart, UART_IT_TC);
+
     huart->State = HAL_UART_STATE_READY;
-  //}
-  
-  HAL_UART_TxCpltCallback(huart);
-  
-  return HAL_OK;
+
+    HAL_UART_TxCpltCallback(huart);
+
+    return HAL_OK;
 }
 
 /**
