@@ -105,7 +105,7 @@
 
 #define USB_HS_MAX_PACKET_SIZE                            512
 #define USB_FS_MAX_PACKET_SIZE                            64
-#define USB_MAX_EP0_SIZE                                  64
+#define USB_MAX_EP0_SIZE                                  32
 
 /*  Device Status */
 #define USBD_STATE_DEFAULT                                1

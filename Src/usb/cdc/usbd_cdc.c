@@ -60,6 +60,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc.h"
+#include "usbd_cdc_io.h"
 #include "usbd_desc.h"
 #include "usbd_ctlreq.h"
 

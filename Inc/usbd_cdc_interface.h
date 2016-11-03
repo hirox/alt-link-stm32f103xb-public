@@ -52,6 +52,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
 #include "usbd_cdc.h"
+#include "usbd_cdc_io.h"
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
@@ -78,15 +79,15 @@
 #define USARTx_IRQHandler                USART1_IRQHandler
 
 /* Definition for USARTx's DMA: used for transmitting data over Tx pin */
-#define USARTx_TX_DMA_STREAM             DMA1_Channel4  
+#define USARTx_TX_DMA_STREAM             DMA1_Channel4
 #define USARTx_DMA_TX_IRQHandler         DMA1_Channel4_IRQHandler
 #define USARTx_DMA_TX_IRQn               DMA1_Channel4_IRQn
 
 /* Definition for TIMx clock resources */
 #define TIMx                             TIM2
 #define TIMx_CLK_ENABLE                  __HAL_RCC_TIM2_CLK_ENABLE
-#define TIMx_FORCE_RESET()               __HAL_RCC_USART1_FORCE_RESET()
-#define TIMx_RELEASE_RESET()             __HAL_RCC_USART1_RELEASE_RESET()
+#define TIMx_FORCE_RESET()               do { __HAL_RCC_USART1_FORCE_RESET(); __HAL_RCC_USART2_FORCE_RESET(); } while(0)
+#define TIMx_RELEASE_RESET()             do { __HAL_RCC_USART1_RELEASE_RESET(); __HAL_RCC_USART2_RELEASE_RESET(); } while(0)
 
 /* Definition for TIMx's NVIC */
 #define TIMx_IRQn                        TIM2_IRQn

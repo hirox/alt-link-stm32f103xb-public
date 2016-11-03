@@ -48,6 +48,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usbd_cdc.h"
+#include "usbd_hid.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -237,7 +238,8 @@ void HAL_PCD_DisconnectCallback(PCD_HandleTypeDef *hpcd)
                        LL Driver Interface (USB Device Library --> PCD)
 *******************************************************************************/
 
-#define PMA_ADDR_BASE (4 * 8)
+// 4 bytes * 6 eps * 2 entries (TX/RX) => 48bytes (512-48=464, 464-64*6=80, 80-8*2=64)
+#define PMA_ADDR_BASE (4 * 6 * 2)
 
 /**
   * @brief  Initializes the Low Level portion of the Device driver.
@@ -262,12 +264,15 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   HAL_PCD_Init((PCD_HandleTypeDef*)pdev->pData);
 
   HAL_PCDEx_PMAConfig(pdev->pData , 0x00 , PCD_SNG_BUF, PMA_ADDR_BASE);
-  HAL_PCDEx_PMAConfig(pdev->pData , 0x80 , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40);
-  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPIN_ADDR , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 2);  
-  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPOUT_ADDR , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 3);
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_IN_EP , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 4);  
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_OUT_EP , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 5);
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_CMD_EP , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 6);
+  HAL_PCDEx_PMAConfig(pdev->pData , 0x80 , PCD_SNG_BUF, PMA_ADDR_BASE + 0x20);
+  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPIN_ADDR , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 1);
+  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPOUT_ADDR , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 2);
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_IN_EP , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 3);
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_OUT_EP , PCD_SNG_BUF, PMA_ADDR_BASE + 0x08 + 0x40 * 3);
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_CMD_EP , PCD_SNG_BUF, PMA_ADDR_BASE + 0x08 + 0x40 * 4);
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_IN_EP2 , PCD_SNG_BUF, PMA_ADDR_BASE + 0x08 + 0x40 * 5);
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_OUT_EP2 , PCD_SNG_BUF, PMA_ADDR_BASE + 0x10 + 0x40 * 5);
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_CMD_EP2 , PCD_SNG_BUF, PMA_ADDR_BASE + 0x10 + 0x40 * 6);
 
   return USBD_OK;
 }

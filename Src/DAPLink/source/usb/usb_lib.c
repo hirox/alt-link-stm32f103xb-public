@@ -103,10 +103,11 @@ const U8 usbd_cdc_acm_dif_num = USBD_CDC_ACM_DIF_NUM;
 #define USBD_HID_DESC_LEN                 (USB_INTERFACE_DESC_SIZE + USB_HID_DESC_SIZE                                                          + \
                                           (USB_ENDPOINT_DESC_SIZE*(1+(USBD_HID_EP_INTOUT != 0))))
 #define USBD_HID_DESC_OFS                 (USB_CONFIGUARTION_DESC_SIZE + USB_INTERFACE_DESC_SIZE                                                + \
-                                           USBD_MSC_ENABLE * USBD_MSC_DESC_LEN + USBD_CDC_ACM_ENABLE * USBD_CDC_ACM_DESC_LEN)
+                                           USBD_MSC_ENABLE * USBD_MSC_DESC_LEN + USBD_CDC_ACM_ENABLE * USBD_CDC_ACM_DESC_LEN + CDC_ENDPOINT2 * USBD_CDC_ACM_DESC_LEN)
 
 #define USBD_WTOTALLENGTH                 (USB_CONFIGUARTION_DESC_SIZE +                 \
                                            USBD_CDC_ACM_DESC_LEN * USBD_CDC_ACM_ENABLE + \
+                                           USBD_CDC_ACM_DESC_LEN * CDC_ENDPOINT2 + \
                                            USBD_HID_DESC_LEN     * USBD_HID_ENABLE     + \
                                            USBD_MSC_DESC_LEN     * USBD_MSC_ENABLE)
 
@@ -513,11 +514,11 @@ const U8 USBD_DeviceQualifier_HS[] = { 0 };
   0x01,                                 /* bFunctionProtocol (V.25ter, Common AT commands) */               \
   USBD_CDC_ACM_CIF_STR_NUM,             /* iFunction */                                                     \
 
-#define CDC_ACM_DESC_IF0                                                                                        \
+#define CDC_ACM_DESC_IF0(cif, dif)                                                                          \
 /* Interface, Alternate Setting 0, CDC Class */                                                             \
   USB_INTERFACE_DESC_SIZE,              /* bLength */                                                       \
   USB_INTERFACE_DESCRIPTOR_TYPE,        /* bDescriptorType */                                               \
-  USBD_CDC_ACM_CIF_NUM,                 /* bInterfaceNumber: Number of Interface */                         \
+  (cif),                                /* bInterfaceNumber: Number of Interface */                         \
   0x00,                                 /* bAlternateSetting: Alternate setting */                          \
   0x01,                                 /* bNumEndpoints: One endpoint used */                              \
   CDC_COMMUNICATION_INTERFACE_CLASS,    /* bInterfaceClass: Communication Interface Class */                \
@@ -545,32 +546,23 @@ const U8 USBD_DeviceQualifier_HS[] = { 0 };
   CDC_UNION_SIZE,                       /* bFunctionLength */                                               \
   CDC_CS_INTERFACE,                     /* bDescriptorType: CS_INTERFACE */                                 \
   CDC_UNION,                            /* bDescriptorSubtype: Union func desc */                           \
-  USBD_CDC_ACM_CIF_NUM,                 /* bMasterInterface: Communication class interface is master */     \
-  USBD_CDC_ACM_DIF_NUM,                 /* bSlaveInterface0: Data class interface is slave 0 */
+  (cif),                                /* bMasterInterface: Communication class interface is master */     \
+  (dif),                                /* bSlaveInterface0: Data class interface is slave 0 */
 
-#define CDC_ACM_EP_IF0                  /* CDC Endpoints for Interface 0 for Low-speed/Full-speed */        \
+#define CDC_ACM_EP_IF0(ep)              /* CDC Endpoints for Interface 0 for Low-speed/Full-speed */        \
 /* Endpoint, EP Interrupt IN */         /* event notification (optional) */                                 \
   USB_ENDPOINT_DESC_SIZE,               /* bLength */                                                       \
   USB_ENDPOINT_DESCRIPTOR_TYPE,         /* bDescriptorType */                                               \
-  USB_ENDPOINT_IN(USBD_CDC_ACM_EP_INTIN),/* bEndpointAddress */                                             \
+  USB_ENDPOINT_IN((ep)),                /* bEndpointAddress */                                              \
   USB_ENDPOINT_TYPE_INTERRUPT,          /* bmAttributes */                                                  \
   WBVAL(USBD_CDC_ACM_WMAXPACKETSIZE),   /* wMaxPacketSize */                                                \
   USBD_CDC_ACM_BINTERVAL,               /* bInterval */
 
-#define CDC_ACM_EP_IF0_HS               /* CDC Endpoints for Interface 0 for High-speed */                  \
-/* Endpoint, EP Interrupt IN */         /* event notification (optional) */                                 \
-  USB_ENDPOINT_DESC_SIZE,               /* bLength */                                                       \
-  USB_ENDPOINT_DESCRIPTOR_TYPE,         /* bDescriptorType */                                               \
-  USB_ENDPOINT_IN(USBD_CDC_ACM_EP_INTIN),/* bEndpointAddress */                                             \
-  USB_ENDPOINT_TYPE_INTERRUPT,          /* bmAttributes */                                                  \
-  WBVAL(USBD_CDC_ACM_HS_WMAXPACKETSIZE),/* wMaxPacketSize */                                                \
-  USBD_CDC_ACM_HS_BINTERVAL,            /* bInterval */
-
-#define CDC_ACM_DESC_IF1                                                                                        \
+#define CDC_ACM_DESC_IF1(dif)                                                                               \
 /* Interface, Alternate Setting 0, Data class interface descriptor*/                                        \
   USB_INTERFACE_DESC_SIZE,              /* bLength */                                                       \
   USB_INTERFACE_DESCRIPTOR_TYPE,        /* bDescriptorType */                                               \
-  USBD_CDC_ACM_DIF_NUM,                 /* bInterfaceNumber: Number of Interface */                         \
+  (dif),                                /* bInterfaceNumber: Number of Interface */                         \
   0x00,                                 /* bAlternateSetting: no alternate setting */                       \
   0x02,                                 /* bNumEndpoints: two endpoints used */                             \
   CDC_DATA_INTERFACE_CLASS,             /* bInterfaceClass: Data Interface Class */                         \
@@ -578,11 +570,11 @@ const U8 USBD_DeviceQualifier_HS[] = { 0 };
   0x00,                                 /* bInterfaceProtocol: no protocol used */                          \
   USBD_CDC_ACM_DIF_STR_NUM,             /* iInterface */
 
-#define CDC_ACM_EP_IF1                  /* CDC Endpoints for Interface 1 for Low-speed/Full-speed */        \
+#define CDC_ACM_EP_IF1(epout, epin)     /* CDC Endpoints for Interface 1 for Low-speed/Full-speed */        \
 /* Endpoint, EP Bulk OUT */                                                                                 \
   USB_ENDPOINT_DESC_SIZE,               /* bLength */                                                       \
   USB_ENDPOINT_DESCRIPTOR_TYPE,         /* bDescriptorType */                                               \
-  USB_ENDPOINT_OUT(USBD_CDC_ACM_EP_BULKOUT),/* bEndpointAddress */                                          \
+  USB_ENDPOINT_OUT((epout)),            /* bEndpointAddress */                                              \
   USB_ENDPOINT_TYPE_BULK,               /* bmAttributes */                                                  \
   WBVAL(USBD_CDC_ACM_WMAXPACKETSIZE1),  /* wMaxPacketSize */                                                \
   0x00,                                 /* bInterval: ignore for Bulk transfer */                           \
@@ -590,27 +582,10 @@ const U8 USBD_DeviceQualifier_HS[] = { 0 };
 /* Endpoint, EP Bulk IN */                                                                                  \
   USB_ENDPOINT_DESC_SIZE,               /* bLength */                                                       \
   USB_ENDPOINT_DESCRIPTOR_TYPE,         /* bDescriptorType */                                               \
-  USB_ENDPOINT_IN(USBD_CDC_ACM_EP_BULKIN),/* bEndpointAddress */                                            \
+  USB_ENDPOINT_IN((epin)),              /* bEndpointAddress */                                              \
   USB_ENDPOINT_TYPE_BULK,               /* bmAttributes */                                                  \
   WBVAL(USBD_CDC_ACM_WMAXPACKETSIZE1),  /* wMaxPacketSize */                                                \
   0x00,                                 /* bInterval: ignore for Bulk transfer */
-
-#define CDC_ACM_EP_IF1_HS               /* CDC Endpoints for Interface 1 for High-speed */                  \
-/* Endpoint, EP Bulk OUT */                                                                                 \
-  USB_ENDPOINT_DESC_SIZE,               /* bLength */                                                       \
-  USB_ENDPOINT_DESCRIPTOR_TYPE,         /* bDescriptorType */                                               \
-  USB_ENDPOINT_OUT(USBD_CDC_ACM_EP_BULKOUT),/* bEndpointAddress */                                          \
-  USB_ENDPOINT_TYPE_BULK,               /* bmAttributes */                                                  \
-  WBVAL(USBD_CDC_ACM_HS_WMAXPACKETSIZE1),/* wMaxPacketSize */                                               \
-  USBD_CDC_ACM_HS_BINTERVAL1,           /* bInterval */                                                     \
-                                                                                                            \
-/* Endpoint, EP Bulk IN */                                                                                  \
-  USB_ENDPOINT_DESC_SIZE,               /* bLength */                                                       \
-  USB_ENDPOINT_DESCRIPTOR_TYPE,         /* bDescriptorType */                                               \
-  USB_ENDPOINT_IN(USBD_CDC_ACM_EP_BULKIN),/* bEndpointAddress */                                            \
-  USB_ENDPOINT_TYPE_BULK,               /* bmAttributes */                                                  \
-  WBVAL(USBD_CDC_ACM_HS_WMAXPACKETSIZE1),/* wMaxPacketSize */                                               \
-  USBD_CDC_ACM_HS_BINTERVAL1,           /* bInterval */
 
 /* USB Device Configuration Descriptor (for Full Speed) */
 /*   All Descriptors (Configuration, Interface, Endpoint, Class, Vendor) */
@@ -653,10 +628,20 @@ __weak \
 #if (USBD_MULTI_IF)
     CDC_ACM_DESC_IAD(USBD_CDC_ACM_CIF_NUM, 2)
 #endif
-    CDC_ACM_DESC_IF0
-    CDC_ACM_EP_IF0
-    CDC_ACM_DESC_IF1
-    CDC_ACM_EP_IF1
+    CDC_ACM_DESC_IF0(USBD_CDC_ACM_CIF_NUM, USBD_CDC_ACM_DIF_NUM)
+    CDC_ACM_EP_IF0(USBD_CDC_ACM_EP_INTIN)
+    CDC_ACM_DESC_IF1(USBD_CDC_ACM_DIF_NUM)
+    CDC_ACM_EP_IF1(USBD_CDC_ACM_EP_BULKOUT, USBD_CDC_ACM_EP_BULKIN)
+#endif
+
+#if (CDC_ENDPOINT2)
+#if (USBD_MULTI_IF)
+    CDC_ACM_DESC_IAD(USBD_CDC_ACM_CIF_NUM2, 2)
+#endif
+    CDC_ACM_DESC_IF0(USBD_CDC_ACM_CIF_NUM2, USBD_CDC_ACM_DIF_NUM2)
+    CDC_ACM_EP_IF0(USBD_CDC_ACM_EP_INTIN2)
+    CDC_ACM_DESC_IF1(USBD_CDC_ACM_DIF_NUM2)
+    CDC_ACM_EP_IF1(USBD_CDC_ACM_EP_BULKOUT2, USBD_CDC_ACM_EP_BULKIN2)
 #endif
 
     /* Terminator */                                                                                            \

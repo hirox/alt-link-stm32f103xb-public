@@ -19,6 +19,10 @@
  * limitations under the License.
  */
 
+
+#include "usbd_def.h"
+#include "usbd_cdc.h"
+
 // special definitions for gcc
 #include <wchar.h>
 #define __weak
@@ -28,7 +32,6 @@
 #pragma pack(1)
 #define DAPLINK_VERSION 241
 #define HID_ENDPOINT
-#define CDC_ENDPOINT
 //DAPLINK_VERSION=241, HID_ENDPOINT, MSC_ENDPOINT, CDC_ENDPOINT, DAPLINK_IF, DAPLINK_BUILD_KEY=0x9B939E8F, INTERFACE_STM32F103XB, CPU_STM32F103RBT6, USE_STDPERIPH_DRIVER, STM32F10X_MD, DAPLINK_HIC_ID=0x97969904, BL_TARGET_FLASH, USE_HSE_16MHZ
 
 // <e> USB Device
@@ -59,7 +62,7 @@
 //       <i> Device release number in binary-coded decimal (bcdDevice)
 //   </h>
 #define USBD_POWER                  0
-#define USBD_MAX_PACKET0            64
+#define USBD_MAX_PACKET0            USB_MAX_EP0_SIZE
 #define USBD_DEVDESC_IDVENDOR       0x0D28
 #define USBD_DEVDESC_IDPRODUCT      0x0204
 #define USBD_DEVDESC_BCDDEVICE      0x0100 //was 0x0100
@@ -311,23 +314,28 @@
 #ifndef CDC_ENDPOINT
 #define CDC_ENDPOINT 0
 #else
+#undef CDC_ENDPOINT
 #define CDC_ENDPOINT 1
 #endif
+#ifndef CDC_ENDPOINT2
+#define CDC_ENDPOINT2 0
+#else
+#undef CDC_ENDPOINT2
+#define CDC_ENDPOINT2 1
+#endif
+
 #define USBD_CDC_ACM_ENABLE             CDC_ENDPOINT
-#define USBD_CDC_ACM_EP_INTIN           2
+#define USBD_CDC_ACM_EP_INTIN           (CDC_CMD_EP  - 0x80)
+#define USBD_CDC_ACM_EP_INTIN2          (CDC_CMD_EP2 - 0x80)
 #define USBD_CDC_ACM_EP_INTIN_STACK     0
-#define USBD_CDC_ACM_WMAXPACKETSIZE     64
+#define USBD_CDC_ACM_WMAXPACKETSIZE     CDC_CMD_PACKET_SIZE
 #define USBD_CDC_ACM_BINTERVAL          64
-#define USBD_CDC_ACM_HS_ENABLE          0
-#define USBD_CDC_ACM_HS_WMAXPACKETSIZE  16
-#define USBD_CDC_ACM_HS_BINTERVAL       2
-#define USBD_CDC_ACM_EP_BULKIN          3
-#define USBD_CDC_ACM_EP_BULKOUT         3
+#define USBD_CDC_ACM_EP_BULKIN          (CDC_IN_EP - 0x80)
+#define USBD_CDC_ACM_EP_BULKOUT         CDC_OUT_EP
+#define USBD_CDC_ACM_EP_BULKIN2         (CDC_IN_EP2 - 0x80)
+#define USBD_CDC_ACM_EP_BULKOUT2        CDC_OUT_EP2
 #define USBD_CDC_ACM_EP_BULKIN_STACK    0
-#define USBD_CDC_ACM_WMAXPACKETSIZE1    64
-#define USBD_CDC_ACM_HS_ENABLE1         0
-#define USBD_CDC_ACM_HS_WMAXPACKETSIZE1 16
-#define USBD_CDC_ACM_HS_BINTERVAL1      0
+#define USBD_CDC_ACM_WMAXPACKETSIZE1    CDC_DATA_FS_MAX_PACKET_SIZE
 #define USBD_CDC_ACM_CIF_STRDESC        L"Alt-Link Serial Port"
 #define USBD_CDC_ACM_DIF_STRDESC        L"Alt-Link Serial Port"
 #define USBD_CDC_ACM_SENDBUF_SIZE       64
@@ -363,7 +371,7 @@
 
 /* USB Device Calculations ---------------------------------------------------*/
 
-#define USBD_IF_NUM                (USBD_HID_ENABLE+USBD_MSC_ENABLE+(USBD_ADC_ENABLE*2)+(USBD_CDC_ACM_ENABLE*2)+USBD_CLS_ENABLE)
+#define USBD_IF_NUM                (USBD_HID_ENABLE+USBD_MSC_ENABLE+(USBD_ADC_ENABLE*2)+(USBD_CDC_ACM_ENABLE*2)+(CDC_ENDPOINT2*USBD_CDC_ACM_ENABLE*2)+USBD_CLS_ENABLE)
 #define USBD_MULTI_IF              (USBD_CDC_ACM_ENABLE*(USBD_HID_ENABLE|USBD_MSC_ENABLE|USBD_ADC_ENABLE))
 #define MAX(x, y)                (((x) < (y)) ? (y) : (x))
 #define USBD_EP_NUM_CALC0           MAX((USBD_HID_ENABLE    *(USBD_HID_EP_INTIN     )), (USBD_HID_ENABLE    *(USBD_HID_EP_INTOUT!=0)*(USBD_HID_EP_INTOUT)))
@@ -373,7 +381,16 @@
 #define USBD_EP_NUM_CALC4           MAX(USBD_EP_NUM_CALC0, USBD_EP_NUM_CALC1)
 #define USBD_EP_NUM_CALC5           MAX(USBD_EP_NUM_CALC2, USBD_EP_NUM_CALC3)
 #define USBD_EP_NUM_CALC6           MAX(USBD_EP_NUM_CALC4, USBD_EP_NUM_CALC5)
-#define USBD_EP_NUM                (USBD_EP_NUM_CALC6)
+#define USBD_EP_NUM_CALC7           MAX((CDC_ENDPOINT2*(USBD_CDC_ACM_EP_BULKIN)), (CDC_ENDPOINT2*(USBD_CDC_ACM_EP_BULKOUT)))
+#define USBD_EP_NUM_CALC8           MAX(USBD_EP_NUM_CALC6, USBD_EP_NUM_CALC7)
+#define USBD_EP_NUM                (USBD_EP_NUM_CALC8)
+
+#if    (CDC_ENDPOINT2)
+#if    (CDC_ENDPOINT)
+#else
+#error "CDC_ENDPOINT should be defined!"
+#endif
+#endif
 
 #if    (USBD_HID_ENABLE)
 #if    (USBD_MSC_ENABLE)
@@ -402,6 +419,15 @@
        (USBD_HID_EP_INTOUT  == USBD_CDC_ACM_EP_BULKOUT))))
 #error "HID and Communication Device Interface can not use same Endpoints!"
 #endif
+#if  (((USBD_HID_EP_INTIN   == USBD_CDC_ACM_EP_INTIN2)   || \
+       (USBD_HID_EP_INTIN   == USBD_CDC_ACM_EP_BULKIN2)  || \
+       (USBD_HID_EP_INTIN   == USBD_CDC_ACM_EP_BULKOUT2))|| \
+      ((USBD_HID_EP_INTOUT  != 0)                       && \
+      ((USBD_HID_EP_INTOUT  == USBD_CDC_ACM_EP_INTIN2)   || \
+       (USBD_HID_EP_INTOUT  == USBD_CDC_ACM_EP_BULKIN2)  || \
+       (USBD_HID_EP_INTOUT  == USBD_CDC_ACM_EP_BULKOUT2))))
+#error "HID and Communication Device Interface can not use same Endpoints!"
+#endif
 #endif
 #endif
 
@@ -421,6 +447,14 @@
        (USBD_MSC_EP_BULKOUT == USBD_CDC_ACM_EP_BULKOUT))
 #error "Mass Storage Device and Communication Device Interface can not use same Endpoints!"
 #endif
+#if   ((USBD_MSC_EP_BULKIN  == USBD_CDC_ACM_EP_INTIN2)   || \
+       (USBD_MSC_EP_BULKIN  == USBD_CDC_ACM_EP_BULKIN2)  || \
+       (USBD_MSC_EP_BULKIN  == USBD_CDC_ACM_EP_BULKOUT2) || \
+       (USBD_MSC_EP_BULKOUT == USBD_CDC_ACM_EP_INTIN2)   || \
+       (USBD_MSC_EP_BULKOUT == USBD_CDC_ACM_EP_BULKIN2)  || \
+       (USBD_MSC_EP_BULKOUT == USBD_CDC_ACM_EP_BULKOUT2))
+#error "Mass Storage Device and Communication Device Interface can not use same Endpoints!"
+#endif
 #endif
 #endif
 
@@ -429,6 +463,11 @@
 #if   ((USBD_ADC_EP_ISOOUT  == USBD_CDC_ACM_EP_INTIN)   || \
        (USBD_ADC_EP_ISOOUT  == USBD_CDC_ACM_EP_BULKIN)  || \
        (USBD_ADC_EP_ISOOUT  == USBD_CDC_ACM_EP_BULKOUT))
+#error "Audio Device and Communication Device Interface can not use same Endpoints!"
+#endif
+#if   ((USBD_ADC_EP_ISOOUT  == USBD_CDC_ACM_EP_INTIN2)   || \
+       (USBD_ADC_EP_ISOOUT  == USBD_CDC_ACM_EP_BULKIN2)  || \
+       (USBD_ADC_EP_ISOOUT  == USBD_CDC_ACM_EP_BULKOUT2))
 #error "Audio Device and Communication Device Interface can not use same Endpoints!"
 #endif
 #endif
@@ -440,7 +479,9 @@
 #define USBD_MSC_IF_NUM            (USBD_ADC_ENABLE*2+0)
 #define USBD_CDC_ACM_CIF_NUM       (USBD_ADC_ENABLE*2+USBD_MSC_ENABLE*1+0)
 #define USBD_CDC_ACM_DIF_NUM       (USBD_ADC_ENABLE*2+USBD_MSC_ENABLE*1+1)
-#define USBD_HID_IF_NUM            (USBD_ADC_ENABLE*2+USBD_MSC_ENABLE*1+USBD_CDC_ACM_ENABLE*2+0)
+#define USBD_CDC_ACM_CIF_NUM2      (USBD_ADC_ENABLE*2+USBD_MSC_ENABLE*1+CDC_ENDPOINT2*2)
+#define USBD_CDC_ACM_DIF_NUM2      (USBD_ADC_ENABLE*2+USBD_MSC_ENABLE*1+CDC_ENDPOINT2*2+1)
+#define USBD_HID_IF_NUM            (USBD_ADC_ENABLE*2+USBD_MSC_ENABLE*1+USBD_CDC_ACM_ENABLE*2+CDC_ENDPOINT2*2+0)
 
 #define USBD_ADC_CIF_STR_NUM       (3+USBD_STRDESC_SER_ENABLE+0)
 #define USBD_ADC_SIF1_STR_NUM      (3+USBD_STRDESC_SER_ENABLE+1)

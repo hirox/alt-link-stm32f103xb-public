@@ -55,8 +55,6 @@
 #include "usbd_core.h"
 #include "stm32f1xx_hal_pcd.h"
 #include "usbd_desc.h"
-#include "usbd_customhid.h"
-#include "usbd_customhid_if.h"
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/

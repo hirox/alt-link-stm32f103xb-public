@@ -46,10 +46,11 @@
   */ 
 
 /* Includes ------------------------------------------------------------------*/
-#include "usbd_customhid.h"
+#include "usbd_hid.h"
 #include "usbd_desc.h"
 #include "usbd_ctlreq.h"
 #include "usbd_cdc.h"
+#include "usbd_cdc_io.h"
 
 extern const uint16_t USBD_HID_DescriptorOffset;
 extern const uint16_t USBD_HID_ReportDescriptorSize;

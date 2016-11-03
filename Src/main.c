@@ -48,7 +48,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usbd_cdc.h"
-#include "usbd_customhid.h"
+#include "usbd_hid.h"
 
 
 /** @addtogroup STM32F1xx_HAL_Validation
