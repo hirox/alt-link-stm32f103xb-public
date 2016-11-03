@@ -1,14 +1,14 @@
 /**
   ******************************************************************************
-  * @file    USB_Device/CDC_Standalone/Src/usbd_cdc_interface.c
+  * @file    USB_Device/CustomHID_Standalone/Src/usbd_customhid_if.c
   * @author  MCD Application Team
   * @version V1.4.0
   * @date    29-April-2016
-  * @brief   Source file for USBD CDC interface
+  * @brief   USB Device Custom HID interface file.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright � 2016 STMicroelectronics International N.V. 
+  * <h2><center>&copy; Copyright © 2016 STMicroelectronics International N.V. 
   * All rights reserved.</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -261,7 +261,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   * @param  huart: UART handle
   * @retval None
   */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+uint8_t* HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   /* Increment Index for buffer writing */
   UserTxBufPtrIn++;
@@ -274,7 +274,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   
   // inside IRQ
   /* Start another reception: provide the buffer pointer with offset and the buffer size */
-  HAL_UART_Receive_IT(huart, (uint8_t *)(UserTxBuffer + UserTxBufPtrIn), 1);
+  //HAL_UART_Receive_IT(huart, (uint8_t *)(UserTxBuffer + UserTxBufPtrIn), 1);
+  
+  return (uint8_t *)(UserTxBuffer + UserTxBufPtrIn);
 }
 
 /**
@@ -322,7 +324,11 @@ __NOINLINE void CDC_Run_In_Thread_Mode()
         HAL_UART_Transmit_DMA(&UartHandle, DMA_BUF, TransmitLen);
         DMA_Transferring = 1;
 
+        // USBのIRQの中でUSBが叩かれることがあるので競合してしまう可能性がある
+        // IRQを止めることで競合の可能性を排除する
+        HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
         USBD_CDC_ReceivePacket(&USBD_Device);
+        HAL_NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
     }
 #endif
 #if 1

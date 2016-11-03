@@ -570,7 +570,7 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
   { 
     UART_Receive_IT(huart);
   }
-  
+#if 0
   tmp_flag = __HAL_UART_GET_FLAG(huart, UART_FLAG_TXE);
   tmp_it_source = __HAL_UART_GET_IT_SOURCE(huart, UART_IT_TXE);
   /* UART in mode Transmitter ------------------------------------------------*/
@@ -578,7 +578,7 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
   {
     UART_Transmit_IT(huart);
   }
-
+#endif
   tmp_flag = __HAL_UART_GET_FLAG(huart, UART_FLAG_TC);
   tmp_it_source = __HAL_UART_GET_IT_SOURCE(huart, UART_IT_TC);
   /* UART in mode Transmitter end --------------------------------------------*/
@@ -614,21 +614,6 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
   /* NOTE: This function should not be modified, when the callback is needed,
            the HAL_UART_TxHalfCpltCallback can be implemented in the user file
    */ 
-}
-
-/**
-  * @brief  Rx Transfer completed callbacks.
-  * @param  huart: Pointer to a UART_HandleTypeDef structure that contains
-  *                the configuration information for the specified UART module.
-  * @retval None
-  */
-__weak void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(huart);
-  /* NOTE: This function should not be modified, when the callback is needed,
-           the HAL_UART_RxCpltCallback can be implemented in the user file
-   */
 }
 
 /**
@@ -825,7 +810,7 @@ static void UART_DMAError(DMA_HandleTypeDef *hdma)
   HAL_UART_ErrorCallback(huart);
 }
 
-
+#if 0
 /**
   * @brief  Sends an amount of data in non blocking mode.
   * @param  huart: Pointer to a UART_HandleTypeDef structure that contains
@@ -874,7 +859,7 @@ static HAL_StatusTypeDef UART_Transmit_IT(UART_HandleTypeDef *huart)
     return HAL_BUSY;
   }
 }
-
+#endif
 
 /**
   * @brief  Wraps up transmission in non blocking mode.
@@ -936,25 +921,25 @@ static HAL_StatusTypeDef UART_Receive_IT(UART_HandleTypeDef *huart)
 
     if(--huart->RxXferCount == 0)
     {
-      __HAL_UART_DISABLE_IT(huart, UART_IT_RXNE);
 
-      /* Check if a transmit process is ongoing or not */
-      if(huart->State == HAL_UART_STATE_BUSY_TX && huart->StateRx == HAL_UART_STATE_BUSY_RX/*HAL_UART_STATE_BUSY_TX_RX*/)
-      {
-//        huart->State = HAL_UART_STATE_BUSY_TX;
-        huart->StateRx = HAL_UART_STATE_READY;
-      }
-      else
-      {
+      huart->StateRx = HAL_UART_STATE_READY;
+      uint8_t* p = HAL_UART_RxCpltCallback(huart);
+      if (p == NULL) {
+        __HAL_UART_DISABLE_IT(huart, UART_IT_RXNE);
+
         /* Disable the UART Parity Error Interrupt */
         __HAL_UART_DISABLE_IT(huart, UART_IT_PE);
 
         /* Disable the UART Error Interrupt: (Frame error, noise error, overrun error) */
         __HAL_UART_DISABLE_IT(huart, UART_IT_ERR);
-
-        huart->StateRx = HAL_UART_STATE_READY;
+      } else {
+        //!! special sequence for performance
+        huart->pRxBuffPtr = p;
+        huart->RxXferSize = 1;
+        huart->RxXferCount = 1;
+        huart->ErrorCode = HAL_UART_ERROR_NONE;
+        huart->StateRx = HAL_UART_STATE_BUSY_RX;
       }
-      HAL_UART_RxCpltCallback(huart);
 
       return HAL_OK;
     }

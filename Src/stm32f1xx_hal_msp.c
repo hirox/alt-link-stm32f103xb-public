@@ -95,8 +95,9 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
 
   HAL_GPIO_Init(USARTx_RX_GPIO_PORT, &GPIO_InitStruct);
   
-  /*##-3- Configure the NVIC for UART ########################################*/   
-  HAL_NVIC_SetPriority(USARTx_IRQn, 5, 0);
+  /*##-3- Configure the NVIC for UART ########################################*/
+  //[J] UARTの割り込み優先度が低いとOverrunしてしまうので高い優先度にする必要がある
+  HAL_NVIC_SetPriority(USARTx_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(USARTx_IRQn);
   
   /* Enable DMAx clock */
