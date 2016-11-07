@@ -59,7 +59,6 @@ extern USBD_CUSTOM_HID_ItfTypeDef USBD_CustomHID_fops;
 extern USBD_CDC_ItfTypeDef USBD_CDC_fops;
 
 USBD_CUSTOM_HID_HandleTypeDef hidClassData;
-USBD_CDC_HandleTypeDef cdcClassData;
 
 extern const uint8_t usbd_hid_ep_intin;
 

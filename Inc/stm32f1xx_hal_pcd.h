@@ -609,9 +609,9 @@ PCD_StateTypeDef HAL_PCD_GetState(PCD_HandleTypeDef *hpcd);
   * @retval None
   */
 #define PCD_CLEAR_RX_EP_CTR(USBx, bEpNum)   (PCD_SET_ENDPOINT((USBx), (bEpNum),\
-                                   PCD_GET_ENDPOINT((USBx), (bEpNum)) & 0x7FFF & USB_EPREG_MASK))
+                                   PCD_GET_ENDPOINT((USBx), (bEpNum)) & 0x7FFF & USB_EPREG_MASK | USB_EP_CTR_TX))
 #define PCD_CLEAR_TX_EP_CTR(USBx, bEpNum)   (PCD_SET_ENDPOINT((USBx), (bEpNum),\
-                                   PCD_GET_ENDPOINT((USBx), (bEpNum)) & 0xFF7F & USB_EPREG_MASK))
+                                   PCD_GET_ENDPOINT((USBx), (bEpNum)) & 0xFF7F & USB_EPREG_MASK | USB_EP_CTR_RX))
 
 /**
   * @brief  Toggles DTOG_RX / DTOG_TX bit in the endpoint register.

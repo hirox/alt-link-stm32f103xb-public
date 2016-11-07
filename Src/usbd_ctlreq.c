@@ -178,7 +178,7 @@ USBD_StatusTypeDef  USBD_StdItfReq (USBD_HandleTypeDef *pdev , USBD_SetupReqType
   {
   case USBD_STATE_CONFIGURED:
     
-    if (LOBYTE(req->wIndex) == usbd_hid_if_num || LOBYTE(req->wIndex) == usbd_cdc_acm_cif_num || LOBYTE(req->wIndex) == usbd_cdc_acm_dif_num) 
+    if (LOBYTE(req->wIndex) == usbd_hid_if_num || (LOBYTE(req->wIndex) >= usbd_cdc_acm_cif_num || LOBYTE(req->wIndex) <= (usbd_cdc_acm_cif_num + 3))) 
     {
       pdev->pClass->Setup(pdev, req); 
       

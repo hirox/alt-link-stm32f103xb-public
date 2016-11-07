@@ -83,11 +83,33 @@
 #define USARTx_DMA_TX_IRQHandler         DMA1_Channel4_IRQHandler
 #define USARTx_DMA_TX_IRQn               DMA1_Channel4_IRQn
 
+
+/* Definition for USARTx clock resources */
+#define USARTx2                           USART2
+#define USARTx_CLK_ENABLE2()              __HAL_RCC_USART2_CLK_ENABLE();
+
+#define USARTx_FORCE_RESET2()             __HAL_RCC_USART2_FORCE_RESET()
+#define USARTx_RELEASE_RESET2()           __HAL_RCC_USART2_RELEASE_RESET()
+
+/* Definition for USARTx Pins */
+#define USARTx_TX_PIN2                    GPIO_PIN_2
+#define USARTx_RX_PIN2                    GPIO_PIN_3
+
+/* Definition for USARTx's NVIC: used for receiving data over Rx pin */
+#define USARTx_IRQn2                      USART2_IRQn
+#define USARTx_IRQHandler2                USART2_IRQHandler
+
+/* Definition for USARTx's DMA: used for transmitting data over Tx pin */
+#define USARTx_TX_DMA_STREAM2             DMA1_Channel7
+#define USARTx_DMA_TX_IRQHandler2         DMA1_Channel7_IRQHandler
+#define USARTx_DMA_TX_IRQn2               DMA1_Channel7_IRQn
+
+
 /* Definition for TIMx clock resources */
 #define TIMx                             TIM2
 #define TIMx_CLK_ENABLE                  __HAL_RCC_TIM2_CLK_ENABLE
-#define TIMx_FORCE_RESET()               do { __HAL_RCC_USART1_FORCE_RESET(); __HAL_RCC_USART2_FORCE_RESET(); } while(0)
-#define TIMx_RELEASE_RESET()             do { __HAL_RCC_USART1_RELEASE_RESET(); __HAL_RCC_USART2_RELEASE_RESET(); } while(0)
+#define TIMx_FORCE_RESET()               do { } while(0)
+#define TIMx_RELEASE_RESET()             do { } while(0)
 
 /* Definition for TIMx's NVIC */
 #define TIMx_IRQn                        TIM2_IRQn

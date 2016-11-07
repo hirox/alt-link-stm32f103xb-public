@@ -58,6 +58,7 @@
 /* Private functions ---------------------------------------------------------*/
 
 static DMA_HandleTypeDef hdma_tx;
+static DMA_HandleTypeDef hdma_tx2;
 
 /**
   * @brief UART MSP Initialization 
@@ -78,7 +79,11 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
   USARTx_RX_GPIO_CLK_ENABLE();
   
   /* Enable USARTx clock */
-  USARTx_CLK_ENABLE();
+  if (huart->Instance == USARTx) {
+      USARTx_CLK_ENABLE();
+  } else {
+      USARTx_CLK_ENABLE2();
+  }
    
   /*##-2- Configure peripheral GPIO ##########################################*/  
   /* UART TX GPIO pin configuration  */
@@ -88,41 +93,65 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
   GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_HIGH;
 
   HAL_GPIO_Init(USARTx_TX_GPIO_PORT, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin       = USARTx_TX_PIN2;
+  HAL_GPIO_Init(USARTx_TX_GPIO_PORT, &GPIO_InitStruct);
   
   /* UART RX GPIO pin configuration  */
   GPIO_InitStruct.Pin = USARTx_RX_PIN;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 
   HAL_GPIO_Init(USARTx_RX_GPIO_PORT, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = USARTx_RX_PIN2;
+  HAL_GPIO_Init(USARTx_RX_GPIO_PORT, &GPIO_InitStruct);
   
   /*##-3- Configure the NVIC for UART ########################################*/
   //[J] UARTの割り込み優先度が低いとOverrunしてしまうので高い優先度にする必要がある
   HAL_NVIC_SetPriority(USARTx_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(USARTx_IRQn);
-  
+  HAL_NVIC_SetPriority(USARTx_IRQn2, 2, 0);
+  HAL_NVIC_EnableIRQ(USARTx_IRQn2);
+
   /* Enable DMAx clock */
   DMAx_CLK_ENABLE();
   
   /*##-4- Configure the DMA streams ##########################################*/
   /* Configure the DMA handler for Transmission process */
-  hdma_tx.Instance                 = USARTx_TX_DMA_STREAM;
-  hdma_tx.Init.Direction           = DMA_MEMORY_TO_PERIPH;
-  hdma_tx.Init.PeriphInc           = DMA_PINC_DISABLE;
-  hdma_tx.Init.MemInc              = DMA_MINC_ENABLE;
-  hdma_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-  hdma_tx.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
-  hdma_tx.Init.Mode                = DMA_NORMAL;
-  hdma_tx.Init.Priority            = DMA_PRIORITY_LOW;
+  DMA_HandleTypeDef* tx = NULL;
+  if (huart->Instance == USARTx) {
+    tx = &hdma_tx;
+    tx->Instance                 = USARTx_TX_DMA_STREAM;
+  } else {
+    tx = &hdma_tx2;
+    tx->Instance                 = USARTx_TX_DMA_STREAM2;
+  }
+  tx->Init.Direction           = DMA_MEMORY_TO_PERIPH;
+  tx->Init.PeriphInc           = DMA_PINC_DISABLE;
+  tx->Init.MemInc              = DMA_MINC_ENABLE;
+  tx->Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+  tx->Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+  tx->Init.Mode                = DMA_NORMAL;
+  tx->Init.Priority            = DMA_PRIORITY_LOW;
   
-  HAL_DMA_Init(&hdma_tx);   
+  HAL_DMA_Init(tx);
   
   /* Associate the initialized DMA handle to the UART handle */
-  __HAL_LINKDMA(huart, hdmatx, hdma_tx);
+  if (huart->Instance == USARTx) {
+    __HAL_LINKDMA(huart, hdmatx, hdma_tx);
+  } else {
+    __HAL_LINKDMA(huart, hdmatx, hdma_tx2);
+  }
   
   /*##-5- Configure the NVIC for DMA #########################################*/   
   /* NVIC configuration for DMA transfer complete interrupt (USARTx_TX) */
-  HAL_NVIC_SetPriority(USARTx_DMA_TX_IRQn, 6, 0);
-  HAL_NVIC_EnableIRQ(USARTx_DMA_TX_IRQn);
+  if (huart->Instance == USARTx) {
+    HAL_NVIC_SetPriority(USARTx_DMA_TX_IRQn, 6, 0);
+    HAL_NVIC_EnableIRQ(USARTx_DMA_TX_IRQn);
+  } else {
+    HAL_NVIC_SetPriority(USARTx_DMA_TX_IRQn2, 6, 0);
+    HAL_NVIC_EnableIRQ(USARTx_DMA_TX_IRQn2);
+  }
   
   /*##-6- Enable TIM peripherals Clock #######################################*/
   TIMx_CLK_ENABLE();
@@ -145,34 +174,40 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
   */
 void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
 {
-  /*##-1- Reset peripherals ##################################################*/
-  USARTx_FORCE_RESET();
-  USARTx_RELEASE_RESET();
+    if (huart->Instance == USARTx) {
+        /*##-0- Disable the NVIC for UART/DMA ######################################*/
+        HAL_NVIC_DisableIRQ(USARTx_IRQn);
+        HAL_NVIC_DisableIRQ(USARTx_DMA_TX_IRQn);
 
-  /*##-2- Disable peripherals and GPIO Clocks #################################*/
-  /* Configure UART Tx as alternate function  */
-  HAL_GPIO_DeInit(USARTx_TX_GPIO_PORT, USARTx_TX_PIN);
-  /* Configure UART Rx as alternate function  */
-  HAL_GPIO_DeInit(USARTx_RX_GPIO_PORT, USARTx_RX_PIN);
+        /*##-1- Reset peripherals ##################################################*/
+        USARTx_FORCE_RESET();
+        USARTx_RELEASE_RESET();
 
-  hdma_tx.Instance                 = USARTx_TX_DMA_STREAM;
-  HAL_DMA_DeInit(&hdma_tx);
-  HAL_NVIC_DisableIRQ(USARTx_DMA_TX_IRQn);
+        /*##-2- Disable peripherals and GPIO Clocks #################################*/
+        /* Configure UART Tx as alternate function  */
+        HAL_GPIO_DeInit(USARTx_TX_GPIO_PORT, USARTx_TX_PIN);
+        /* Configure UART Rx as alternate function  */
+        HAL_GPIO_DeInit(USARTx_RX_GPIO_PORT, USARTx_RX_PIN);
 
-  /*##-3- Disable the NVIC for UART ##########################################*/
-  HAL_NVIC_DisableIRQ(USARTx_IRQn);
+        hdma_tx.Instance                 = USARTx_TX_DMA_STREAM;
+        HAL_DMA_DeInit(&hdma_tx);
+    } else {
+        HAL_NVIC_DisableIRQ(USARTx_IRQn2);
+        HAL_NVIC_DisableIRQ(USARTx_DMA_TX_IRQn2);
+
+        USARTx_FORCE_RESET2();
+        USARTx_RELEASE_RESET2();
+
+        HAL_GPIO_DeInit(USARTx_TX_GPIO_PORT, USARTx_TX_PIN2);
+        HAL_GPIO_DeInit(USARTx_RX_GPIO_PORT, USARTx_RX_PIN2);
+
+        hdma_tx2.Instance                 = USARTx_TX_DMA_STREAM2;
+        HAL_DMA_DeInit(&hdma_tx2);
+    }
   
-  /*##-4- Reset TIM peripheral ###############################################*/
-  TIMx_FORCE_RESET();
-  TIMx_RELEASE_RESET();
+    /*##-4- Reset TIM peripheral ###############################################*/
+    TIMx_FORCE_RESET();
+    TIMx_RELEASE_RESET();
 }
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

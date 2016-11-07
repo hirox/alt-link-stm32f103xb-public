@@ -35,26 +35,22 @@
 /* Includes ------------------------------------------------------------------*/
 #include  "usbd_ioreq.h"
 
-typedef struct
-{
+typedef struct {
   uint32_t bitrate;
   uint8_t  format;
   uint8_t  paritytype;
   uint8_t  datatype;
-}USBD_CDC_LineCodingTypeDef;
+} USBD_CDC_LineCodingTypeDef;
 
-typedef struct _USBD_CDC_Itf
-{
+typedef struct _USBD_CDC_Itf {
   int8_t (* Init)          (void);
   int8_t (* DeInit)        (void);
-  int8_t (* Control)       (uint8_t, uint8_t * , uint16_t);
-  int8_t (* Receive)       (uint8_t *, uint32_t);  
+  int8_t (* Control)       (uint32_t, uint8_t, uint8_t * , uint16_t);
+  int8_t (* Receive)       (uint32_t, uint8_t *, uint32_t);  
+} USBD_CDC_ItfTypeDef;
 
-}USBD_CDC_ItfTypeDef;
 
-
-typedef struct
-{
+typedef struct {
   uint32_t data[CDC_DATA_HS_MAX_PACKET_SIZE/4];      /* Force 32bits alignment */
   uint8_t  CmdOpCode;
   uint8_t  CmdLength;
@@ -68,33 +64,15 @@ typedef struct
 
 
 
-/** @defgroup USBD_CORE_Exported_Macros
-  * @{
-  */ 
-  
-/**
-  * @}
-  */ 
-
-/** @defgroup USBD_CORE_Exported_Variables
-  * @{
-  */ 
-
-extern USBD_ClassTypeDef  USBD_CDC;
-#define USBD_CDC_CLASS    &USBD_CDC
-/**
-  * @}
-  */ 
-
 /** @defgroup USB_CORE_Exported_Functions
   * @{
   */
-uint8_t  USBD_CDC_SetTxBuffer        (uint8_t  *pbuff, uint16_t length);
-uint8_t  USBD_CDC_SetRxBuffer        (uint8_t  *pbuff);
-  
-uint8_t  USBD_CDC_ReceivePacket      (USBD_HandleTypeDef *pdev);
+uint8_t  USBD_CDC_SetTxBuffer        (uint32_t index, uint8_t  *pbuff, uint16_t length);
+uint8_t  USBD_CDC_SetRxBuffer        (uint32_t index, uint8_t  *pbuff);
+uint8_t  USBD_CDC_ReceivePacket      (uint32_t index, USBD_HandleTypeDef *pdev);
+uint8_t  USBD_CDC_TransmitPacket     (uint32_t index, USBD_HandleTypeDef *pdev);
 
-uint8_t  USBD_CDC_TransmitPacket     (USBD_HandleTypeDef *pdev);
+uint8_t  USBD_CDC_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum);
 
 void CDC_Run_In_Thread_Mode();
 

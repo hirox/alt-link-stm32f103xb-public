@@ -108,7 +108,7 @@ typedef enum
   HAL_UART_STATE_BUSY_TX_RX        = 0x32,    /*!< Data Transmission and Reception process is ongoing */
   HAL_UART_STATE_TIMEOUT           = 0x03,    /*!< Timeout state                                      */
   HAL_UART_STATE_ERROR             = 0x04     /*!< Error                                              */
-}HAL_UART_StateTypeDef;
+} HAL_UART_StateTypeDef;
 
 
 /** 
@@ -138,8 +138,8 @@ typedef struct
 
   HAL_LockTypeDef               Lock;             /*!< Locking object                     */
 
-  __IO uint32_t    State;            /*!< UART communication state           */
-  __IO uint32_t    StateRx;          /*!< UART Rx communication state        */
+  __IO HAL_UART_StateTypeDef    State;            /*!< UART communication state           */
+  __IO HAL_UART_StateTypeDef    StateRx;          /*!< UART Rx communication state        */
   
   __IO uint32_t                 ErrorCode;        /*!< UART Error code                    */
 
