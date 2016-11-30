@@ -153,7 +153,7 @@ static int8_t CDC_Itf_Init(void)
 
         /*##-2- Put UART peripheral in IT reception process ########################*/
         /* Any data received will be stored in "UserTxBuffer" buffer  */
-        if(HAL_UART_Receive_IT(&UartHandle[i], (uint8_t *)CDC.d[i].UserTxBuffer, 1) != HAL_OK) {
+        if(HAL_UART_Receive_IT(&UartHandle[i], (uint8_t *)CDC.d[i].UserTxBuffer) != HAL_OK) {
             /* Transfer error in reception process */
             Error_Handler();
         }
@@ -358,7 +358,7 @@ __NOINLINE void CDC_Run_In_Thread_Mode()
             // [TODO] Run_PortConfigを毎回動かすと HAL_UART_STATE_BUSY_TX で HAL_UART_Transmit_DMA がエラーになる謎がある
             CDC.d[i].Run_PortConfig = 0;
             ComPort_Config(i);
-            HAL_UART_Receive_IT(&UartHandle[i], (uint8_t *)(CDC.d[i].UserTxBuffer + CDC.d[i].UserTxBufPtrIn), 1);
+            HAL_UART_Receive_IT(&UartHandle[i], (uint8_t *)(CDC.d[i].UserTxBuffer + CDC.d[i].UserTxBufPtrIn));
         }
 
         if (CDC.d[i].Run_DMA_Transfer_Finished) {

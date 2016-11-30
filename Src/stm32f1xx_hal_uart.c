@@ -271,9 +271,6 @@ HAL_StatusTypeDef HAL_UART_Init(UART_HandleTypeDef *huart)
   
   if(huart->State == HAL_UART_STATE_RESET)
   {  
-    /* Allocate lock resource and initialize it */
-    huart->Lock = HAL_UNLOCKED;
-    
     /* Init the low level hardware */
     HAL_UART_MspInit(huart);
   }
@@ -320,9 +317,6 @@ HAL_StatusTypeDef HAL_UART_DeInit(UART_HandleTypeDef *huart)
   /* Check the parameters */
   assert_param(IS_UART_INSTANCE(huart->Instance));
 
-  //huart->State = HAL_UART_STATE_BUSY;
-  //huart->StateRx = HAL_UART_STATE_BUSY;
-
   /* Disable the Peripheral */
   //__HAL_UART_DISABLE(huart);
   
@@ -336,9 +330,6 @@ HAL_StatusTypeDef HAL_UART_DeInit(UART_HandleTypeDef *huart)
   huart->ErrorCode = HAL_UART_ERROR_NONE;
   huart->State = HAL_UART_STATE_RESET;
   huart->StateRx = HAL_UART_STATE_RESET;
-
-  /* Process Unlock */
-  __HAL_UNLOCK(huart);
 
   return HAL_OK;
 }
@@ -414,14 +405,14 @@ HAL_StatusTypeDef HAL_UART_DeInit(UART_HandleTypeDef *huart)
   * @param  Size: Amount of data to be received
   * @retval HAL status
   */
-HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size)
+HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData)
 {
   uint32_t tmp_state = 0;
   
   tmp_state = huart->State;
   if((huart->StateRx == HAL_UART_STATE_READY) && ((tmp_state == HAL_UART_STATE_READY) || (tmp_state == HAL_UART_STATE_BUSY_TX)))
   {
-    if((pData == NULL ) || (Size == 0))
+    if(pData == NULL)
     {
       return HAL_ERROR;
     }
@@ -430,8 +421,6 @@ HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData,
     //__HAL_LOCK(huart);
 
     huart->pRxBuffPtr = pData;
-    huart->RxXferSize = Size;
-    huart->RxXferCount = Size;
 
     huart->ErrorCode = HAL_UART_ERROR_NONE;
     huart->StateRx = HAL_UART_STATE_BUSY_RX;
@@ -749,28 +738,6 @@ static void UART_DMATxHalfCplt(DMA_HandleTypeDef *hdma)
   HAL_UART_TxHalfCpltCallback(huart);
 }
 
-/**
-  * @brief  DMA UART receive process complete callback. 
-  * @param  hdma: Pointer to a DMA_HandleTypeDef structure that contains
-  *               the configuration information for the specified DMA module.
-  * @retval None
-  */
-static void UART_DMAReceiveCplt(DMA_HandleTypeDef *hdma)  
-{
-  UART_HandleTypeDef* huart = ( UART_HandleTypeDef* )((DMA_HandleTypeDef* )hdma)->Parent;
-  /* DMA Normal mode*/
-  if ( HAL_IS_BIT_CLR(hdma->Instance->CCR, DMA_CCR_CIRC) )
-  {
-    huart->RxXferCount = 0;
-  
-    /* Disable the DMA transfer for the receiver request by setting the DMAR bit 
-       in the UART CR3 register */
-    CLEAR_BIT(huart->Instance->CR3, USART_CR3_DMAR);
-
-    huart->StateRx = HAL_UART_STATE_READY;
-  }
-  HAL_UART_RxCpltCallback(huart);
-}
 
 /**
   * @brief DMA UART receive process half complete callback 
@@ -794,10 +761,8 @@ static void UART_DMARxHalfCplt(DMA_HandleTypeDef *hdma)
 static void UART_DMAError(DMA_HandleTypeDef *hdma)   
 {
   UART_HandleTypeDef* huart = ( UART_HandleTypeDef* )((DMA_HandleTypeDef* )hdma)->Parent;
-  huart->RxXferCount = 0;
   huart->TxXferCount = 0;
   huart->State = HAL_UART_STATE_READY;
-  huart->StateRx = HAL_UART_STATE_READY;
   huart->ErrorCode |= HAL_UART_ERROR_DMA;
   HAL_UART_ErrorCallback(huart);
 }
@@ -880,10 +845,8 @@ static HAL_StatusTypeDef UART_EndTransmit_IT(UART_HandleTypeDef *huart)
 static HAL_StatusTypeDef UART_Receive_IT(UART_HandleTypeDef *huart)
 {
   uint16_t* tmp;
-  uint32_t tmp_state = 0;
-  
-  tmp_state = huart->StateRx; 
-  if (tmp_state == HAL_UART_STATE_BUSY_RX)
+
+  //if (huart->StateRx == HAL_UART_STATE_BUSY_RX)
   {
     if(huart->Init.WordLength == UART_WORDLENGTH_9B)
     {
@@ -891,30 +854,28 @@ static HAL_StatusTypeDef UART_Receive_IT(UART_HandleTypeDef *huart)
       if(huart->Init.Parity == UART_PARITY_NONE)
       {
         *tmp = (uint16_t)(huart->Instance->DR & (uint16_t)0x01FF);
-        huart->pRxBuffPtr += 2;
+        huart->pRxBuffPtr++;
       }
       else
       {
         *tmp = (uint16_t)(huart->Instance->DR & (uint16_t)0x00FF);
-        huart->pRxBuffPtr += 1;
       }
     }
     else
     {
       if(huart->Init.Parity == UART_PARITY_NONE)
       {
-        *huart->pRxBuffPtr++ = (uint8_t)(huart->Instance->DR & (uint8_t)0x00FF);
+        *huart->pRxBuffPtr = (uint8_t)(huart->Instance->DR & (uint8_t)0x00FF);
       }
       else
       {
-        *huart->pRxBuffPtr++ = (uint8_t)(huart->Instance->DR & (uint8_t)0x007F);
+        *huart->pRxBuffPtr = (uint8_t)(huart->Instance->DR & (uint8_t)0x007F);
       }
     }
 
-    if(--huart->RxXferCount == 0)
-    {
       uint8_t* p = HAL_UART_RxCpltCallback(huart);
       if (p == NULL) {
+        huart->pRxBuffPtr++;
         huart->StateRx = HAL_UART_STATE_READY;
 
         __HAL_UART_DISABLE_IT(huart, UART_IT_RXNE);
@@ -927,18 +888,12 @@ static HAL_StatusTypeDef UART_Receive_IT(UART_HandleTypeDef *huart)
       } else {
         //!! special sequence for performance
         huart->pRxBuffPtr = p;
-        huart->RxXferSize = 1;
-        huart->RxXferCount = 1;
-        huart->ErrorCode = HAL_UART_ERROR_NONE;
+        //huart->ErrorCode = HAL_UART_ERROR_NONE;
       }
+
       return HAL_OK;
-    }
-    return HAL_OK;
   }
-  else
-  {
-    return HAL_BUSY; 
-  }
+  //else { return HAL_BUSY; }
 }
 
 /**
