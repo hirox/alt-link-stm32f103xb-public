@@ -201,9 +201,27 @@ Configures the DAP Hardware I/O pins for JTAG mode:
 */
 static __inline void PORT_JTAG_SETUP(void)
 {
-#if (DAP_JTAG != 0)
+    // Set SWCLK(TCK) HIGH
+    pin_out_init(SWCLK_TCK_PIN_PORT, SWCLK_TCK_PIN_Bit);
+    SWCLK_TCK_PIN_PORT->BSRR = SWCLK_TCK_PIN;
+    // Set SWDIO(TMS) HIGH
+    pin_out_init(SWDIO_OUT_PIN_PORT, SWDIO_OUT_PIN_Bit);
+    SWDIO_OUT_PIN_PORT->BSRR = SWDIO_OUT_PIN;
 
-#endif
+    // Set TDI HIGH
+    pin_out_init(JTAG_TDI_PIN_PORT, JTAG_TDI_PIN_Bit);
+    JTAG_TDI_PIN_PORT->BSRR = JTAG_TDI_PIN;
+
+    // TDO
+    pin_in_init(JTAG_TDO_PIN_PORT, JTAG_TDO_PIN_Bit, 1);
+
+    // Set nTRST HIGH
+    pin_out_init(JTAG_nTRST_PIN_PORT, JTAG_nTRST_PIN_Bit);
+    JTAG_nTRST_PIN_PORT->BSRR = JTAG_nTRST_PIN;
+
+    // Set nRESET HIGH
+    pin_out_init(nRESET_PIN_PORT, nRESET_PIN_Bit);
+    nRESET_PIN_PORT->BSRR = nRESET_PIN;
 }
 
 /** Setup SWD I/O pins: SWCLK, SWDIO, and nRESET.
@@ -223,7 +241,7 @@ static __inline void PORT_SWD_SETUP(void)
     if (!isSWDIO_IN_OUT_SAME()) {
         pin_in_init(SWDIO_IN_PIN_PORT, SWDIO_IN_PIN_Bit, 1);
     }
-    // Set RESET HIGH
+    // Set nRESET HIGH
     pin_out_init(nRESET_PIN_PORT, nRESET_PIN_Bit);
     nRESET_PIN_PORT->BSRR = nRESET_PIN;
 }
@@ -239,6 +257,10 @@ static __inline void PORT_OFF(void)
     if (!isSWDIO_IN_OUT_SAME()) {
         pin_in_init(SWDIO_IN_PIN_PORT, SWDIO_IN_PIN_Bit, 0);
     }
+    pin_in_init(JTAG_TDI_PIN_PORT, JTAG_TDI_PIN_Bit, 0);
+	pin_in_init(JTAG_TDO_PIN_PORT, JTAG_TDO_PIN_Bit, 0);
+	pin_in_init(JTAG_nTRST_PIN_PORT, JTAG_nTRST_PIN_Bit, 0);
+	pin_in_init(nRESET_PIN_PORT, nRESET_PIN_Bit, 0);
 }
 
 // SWCLK/TCK I/O pin -------------------------------------
@@ -285,6 +307,7 @@ Set the SWDIO/TMS DAP hardware I/O pin to high level.
 static __forceinline void PIN_SWDIO_TMS_SET(void)
 {
     SWDIO_OUT_PIN_PORT->BSRR = SWDIO_OUT_PIN;
+    __asm__ __volatile__("" : : : "memory");
 }
 
 /** SWDIO/TMS I/O pin: Set Output to Low.
@@ -293,6 +316,7 @@ Set the SWDIO/TMS DAP hardware I/O pin to low level.
 static __forceinline void PIN_SWDIO_TMS_CLR(void)
 {
     SWDIO_OUT_PIN_PORT->BRR = SWDIO_OUT_PIN;
+    __asm__ __volatile__("" : : : "memory");
 }
 
 /** SWDIO I/O pin: Get Input (used in SWD mode only).
@@ -347,7 +371,7 @@ static __forceinline void PIN_SWDIO_OUT_DISABLE(void)
 */
 static __forceinline uint32_t PIN_TDI_IN(void)
 {
-    return (0);   // Not available
+    return ((JTAG_TDI_PIN_PORT->IDR & JTAG_TDI_PIN) ? 1 : 0);
 }
 
 /** TDI I/O pin: Set Output.
@@ -355,7 +379,11 @@ static __forceinline uint32_t PIN_TDI_IN(void)
 */
 static __forceinline void PIN_TDI_OUT(uint32_t bit)
 {
-    ;             // Not available
+    if (bit & 1)
+        JTAG_TDI_PIN_PORT->BSRR = JTAG_TDI_PIN;
+    else
+        JTAG_TDI_PIN_PORT->BRR = JTAG_TDI_PIN;
+    __asm__ __volatile__("" : : : "memory");
 }
 
 
@@ -366,7 +394,7 @@ static __forceinline void PIN_TDI_OUT(uint32_t bit)
 */
 static __forceinline uint32_t PIN_TDO_IN(void)
 {
-    return (0);   // Not available
+    return ((JTAG_TDO_PIN_PORT->IDR & JTAG_TDO_PIN) ? 1 : 0);
 }
 
 
@@ -377,7 +405,7 @@ static __forceinline uint32_t PIN_TDO_IN(void)
 */
 static __forceinline uint32_t PIN_nTRST_IN(void)
 {
-    return (0);   // Not available
+    return ((JTAG_nTRST_PIN_PORT->IDR & JTAG_nTRST_PIN) ? 1 : 0);
 }
 
 /** nTRST I/O pin: Set Output.
@@ -387,7 +415,11 @@ static __forceinline uint32_t PIN_nTRST_IN(void)
 */
 static __forceinline void PIN_nTRST_OUT(uint32_t bit)
 {
-    ;             // Not available
+    if (bit & 1)
+        JTAG_nTRST_PIN_PORT->BSRR = JTAG_nTRST_PIN;
+    else
+        JTAG_nTRST_PIN_PORT->BRR = JTAG_nTRST_PIN;
+    __asm__ __volatile__("" : : : "memory");
 }
 
 // nRESET Pin I/O------------------------------------------
@@ -413,6 +445,7 @@ static __forceinline void     PIN_nRESET_OUT(uint32_t bit)
         nRESET_PIN_PORT->BSRR = nRESET_PIN;
     else
         nRESET_PIN_PORT->BRR = nRESET_PIN;
+    __asm__ __volatile__("" : : : "memory");
 }
 
 //**************************************************************************************************
@@ -439,6 +472,7 @@ static __inline void LED_CONNECTED_OUT(uint32_t bit)
         CONNECTED_LED_PORT->BRR = CONNECTED_LED_PIN; // LED on
     else
         CONNECTED_LED_PORT->BSRR = CONNECTED_LED_PIN;// LED off
+    __asm__ __volatile__("" : : : "memory");
 }
 
 /** Debug Unit: Set status Target Running LED.
@@ -474,20 +508,11 @@ Status LEDs. In detail the operation of Hardware I/O and LED pins are enabled an
 static __inline void DAP_SETUP(void)
 {
     /* Enable port clock */
-    RCC->APB2ENR |= RCC_APB2Periph_GPIOA|RCC_APB2Periph_GPIOB|RCC_APB2Periph_GPIOC;
+    RCC->APB2ENR |= RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC;
+
     /* Configure I/O pin SWCLK */
-    pin_out_init(SWCLK_TCK_PIN_PORT, SWCLK_TCK_PIN_Bit);
-    SWCLK_TCK_PIN_PORT->BSRR = SWCLK_TCK_PIN;
-
-    pin_out_init(SWDIO_OUT_PIN_PORT, SWDIO_OUT_PIN_Bit);
-    SWDIO_OUT_PIN_PORT->BSRR = SWDIO_OUT_PIN;
-
-    if (!isSWDIO_IN_OUT_SAME()) {
-        pin_in_init(SWDIO_IN_PIN_PORT, SWDIO_IN_PIN_Bit, 1);
-    }
-
-    pin_out_init(nRESET_PIN_PORT, nRESET_PIN_Bit);
-    nRESET_PIN_PORT->BSRR = nRESET_PIN;
+    PORT_SWD_SETUP();
+    PORT_JTAG_SETUP();
 
     pin_out_init(CONNECTED_LED_PORT, CONNECTED_LED_PIN_Bit);
     CONNECTED_LED_PORT->BSRR = CONNECTED_LED_PIN;
