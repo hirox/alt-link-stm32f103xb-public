@@ -167,7 +167,7 @@ static const uint8_t *USBD_GetDeviceQualifierDesc(uint16_t *length)
   return USBD_DeviceQualifierDesc;
 }
 
-USBD_ClassTypeDef USBD_HANDLER = 
+const USBD_ClassTypeDef USBD_HANDLER = 
 {
   USBD_Class_Init,
   USBD_Class_DeInit,

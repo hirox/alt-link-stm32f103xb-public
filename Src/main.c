@@ -51,6 +51,7 @@
 #include "usbd_cdc_io.h"
 #include "usbd_hid.h"
 
+extern const USBD_ClassTypeDef USBD_HANDLER;
 
 /** @addtogroup STM32F1xx_HAL_Validation
   * @{

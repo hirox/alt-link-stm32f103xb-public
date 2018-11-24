@@ -122,8 +122,6 @@ USBD_CUSTOM_HID_HandleTypeDef;
   * @{
   */ 
 
-extern USBD_ClassTypeDef  USBD_HANDLER;
-
 /**
   * @}
   */ 
