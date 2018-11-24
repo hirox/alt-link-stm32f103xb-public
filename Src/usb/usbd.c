@@ -147,7 +147,7 @@ uint8_t USBD_EP0_RxReady(USBD_HandleTypeDef *pdev)
 extern const uint8_t USBD_DeviceQualifier[];
 
 /* USB Standard Device Descriptor */
-__ALIGN_BEGIN static uint8_t USBD_CUSTOM_HID_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC] __ALIGN_END =
+__ALIGN_BEGIN static uint8_t USBD_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC] __ALIGN_END =
 {
   USB_LEN_DEV_QUALIFIER_DESC,
   USB_DESC_TYPE_DEVICE_QUALIFIER,
@@ -161,13 +161,13 @@ __ALIGN_BEGIN static uint8_t USBD_CUSTOM_HID_DeviceQualifierDesc[USB_LEN_DEV_QUA
   0x00,
 };
 
-static uint8_t  *USBD_CUSTOM_HID_GetDeviceQualifierDesc (uint16_t *length)
+static uint8_t *USBD_GetDeviceQualifierDesc(uint16_t *length)
 {
-  *length = sizeof (USBD_CUSTOM_HID_DeviceQualifierDesc);
-  return USBD_CUSTOM_HID_DeviceQualifierDesc;
+  *length = sizeof(USBD_DeviceQualifierDesc);
+  return USBD_DeviceQualifierDesc;
 }
 
-USBD_ClassTypeDef  USBD_CUSTOM_HID = 
+USBD_ClassTypeDef USBD_HANDLER = 
 {
   USBD_Class_Init,
   USBD_Class_DeInit,
@@ -182,5 +182,5 @@ USBD_ClassTypeDef  USBD_CUSTOM_HID =
   USBD_GetCfgDesc,
   USBD_GetCfgDesc, 
   USBD_GetCfgDesc,
-  USBD_CUSTOM_HID_GetDeviceQualifierDesc,
+  USBD_GetDeviceQualifierDesc,
 };

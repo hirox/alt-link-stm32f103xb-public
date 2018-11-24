@@ -48,6 +48,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usbd_cdc.h"
+#include "usbd_cdc_io.h"
 #include "usbd_hid.h"
 
 
@@ -88,7 +89,7 @@ int main(void)
     USBD_Init(&USBD_Device, &HID_Desc, 0);
 
     /* Add Supported Class */
-    USBD_RegisterClass(&USBD_Device, &USBD_CUSTOM_HID);
+    USBD_RegisterClass(&USBD_Device, &USBD_HANDLER);
 
     /* Start Device Process */
     USBD_Start(&USBD_Device);
