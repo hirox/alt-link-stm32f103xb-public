@@ -143,6 +143,7 @@
 #ifndef HID_ENDPOINT
 #define HID_ENDPOINT 0
 #else
+#undef  HID_ENDPOINT
 #define HID_ENDPOINT 1
 #endif
 #define USBD_HID_ENABLE             HID_ENDPOINT

@@ -147,7 +147,7 @@ uint8_t USBD_EP0_RxReady(USBD_HandleTypeDef *pdev)
 extern const uint8_t USBD_DeviceQualifier[];
 
 /* USB Standard Device Descriptor */
-__ALIGN_BEGIN static uint8_t USBD_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC] __ALIGN_END =
+__ALIGN_BEGIN static const uint8_t USBD_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC] __ALIGN_END =
 {
   USB_LEN_DEV_QUALIFIER_DESC,
   USB_DESC_TYPE_DEVICE_QUALIFIER,
@@ -161,7 +161,7 @@ __ALIGN_BEGIN static uint8_t USBD_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC
   0x00,
 };
 
-static uint8_t *USBD_GetDeviceQualifierDesc(uint16_t *length)
+static const uint8_t *USBD_GetDeviceQualifierDesc(uint16_t *length)
 {
   *length = sizeof(USBD_DeviceQualifierDesc);
   return USBD_DeviceQualifierDesc;

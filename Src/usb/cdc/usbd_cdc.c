@@ -64,23 +64,6 @@
 #include "usbd_desc.h"
 #include "usbd_ctlreq.h"
 
-uint8_t  *USBD_CDC_GetDeviceQualifierDescriptor (uint16_t *length);
-
-/* USB Standard Device Descriptor */
-__ALIGN_BEGIN static uint8_t USBD_CDC_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC] __ALIGN_END =
-{
-  USB_LEN_DEV_QUALIFIER_DESC,
-  USB_DESC_TYPE_DEVICE_QUALIFIER,
-  0x00,
-  0x02,
-  0x00,
-  0x00,
-  0x00,
-  0x40,
-  0x01,
-  0x00,
-};
-
 USBD_CDC_HandleTypeDef cdcClassData[2];
 extern USBD_CDC_ItfTypeDef USBD_CDC_fops;
 
@@ -247,18 +230,6 @@ uint8_t  USBD_CDC_EP0_RxReady(USBD_HandleTypeDef *pdev)
   return USBD_OK;
 }
 
-
-/**
-* @brief  DeviceQualifierDescriptor 
-*         return Device Qualifier descriptor
-* @param  length : pointer data length
-* @retval pointer to descriptor buffer
-*/
-uint8_t  *USBD_CDC_GetDeviceQualifierDescriptor(uint16_t *length)
-{
-  *length = sizeof(USBD_CDC_DeviceQualifierDesc);
-  return USBD_CDC_DeviceQualifierDesc;
-}
 
 /**
   * @brief  USBD_CDC_SetTxBuffer

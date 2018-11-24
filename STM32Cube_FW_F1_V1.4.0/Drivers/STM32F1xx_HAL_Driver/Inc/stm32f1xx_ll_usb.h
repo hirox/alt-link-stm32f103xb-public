@@ -583,7 +583,7 @@ void              USB_ClearInterrupts (USB_TypeDef *USBx, uint32_t interrupt);
 
 HAL_StatusTypeDef USB_ActivateRemoteWakeup(USB_TypeDef *USBx);
 HAL_StatusTypeDef USB_DeActivateRemoteWakeup(USB_TypeDef *USBx);
-void USB_WritePMA(USB_TypeDef  *USBx, uint8_t *pbUsrBuf, uint16_t wPMABufAddr, uint16_t wNBytes);
+void USB_WritePMA(USB_TypeDef  *USBx, const uint8_t *pbUsrBuf, uint16_t wPMABufAddr, uint16_t wNBytes);
 void USB_ReadPMA(USB_TypeDef  *USBx, uint8_t *pbUsrBuf, uint16_t wPMABufAddr, uint16_t wNBytes);
 #endif /* USB */
 /**

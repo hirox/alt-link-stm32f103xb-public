@@ -2102,7 +2102,7 @@ HAL_StatusTypeDef USB_DeActivateRemoteWakeup(USB_TypeDef *USBx)
   * @param  wNBytes : number of bytes to be copied.
   * @retval None
   */
-void USB_WritePMA(USB_TypeDef *USBx, uint8_t *pbUsrBuf, uint16_t wPMABufAddr, uint16_t wNBytes)
+void USB_WritePMA(USB_TypeDef *USBx, const uint8_t *pbUsrBuf, uint16_t wPMABufAddr, uint16_t wNBytes)
 {
   uint32_t nbytes = (wNBytes + 1) >> 1;   /* nbytes = (wNBytes + 1) / 2 */
   uint32_t index = 0, temp1 = 0, temp2 = 0;
