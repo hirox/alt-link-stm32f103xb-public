@@ -9,7 +9,7 @@ DAPLINK          = ./Src/DAPLink/source
 CMSISDAP         = $(DAPLINK)/daplink/cmsis-dap
 
 SRCS             = Src/main.c Src/stm32f1xx_it.c Src/stm32f1xx_hal_msp.c Src/system_stm32f1xx.c Src/usbd_conf.c Src/usbd_desc.c
-SRCS            += Src/usb/hid/usbd_hid.c Src/usb/hid/usbd_hid_if.c Src/stm32f1xx_hal_pcd.c
+SRCS            += Src/usb/usbd.c Src/usb/hid/usbd_hid.c Src/usb/hid/usbd_hid_if.c Src/stm32f1xx_hal_pcd.c
 SRCS            += Src/usb/cdc/usbd_cdc_interface.c Src/usb/cdc/usbd_cdc.c Src/usbd_ctlreq.c Src/stm32f1xx_hal_uart.c
 SRCS            += $(CMSISDAP)/DAP.c $(CMSISDAP)/JTAG_DP.c $(CMSISDAP)/SW_DP.c
 

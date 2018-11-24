@@ -49,93 +49,18 @@
 #include "usbd_hid.h"
 #include "usbd_desc.h"
 #include "usbd_ctlreq.h"
-#include "usbd_cdc.h"
-#include "usbd_cdc_io.h"
 
 extern const uint16_t USBD_HID_DescriptorOffset;
 extern const uint16_t USBD_HID_ReportDescriptorSize;
 
 extern USBD_CUSTOM_HID_ItfTypeDef USBD_CustomHID_fops;
-extern USBD_CDC_ItfTypeDef USBD_CDC_fops;
 
 USBD_CUSTOM_HID_HandleTypeDef hidClassData;
 
-extern const uint8_t usbd_hid_ep_intin;
-
-/** @addtogroup STM32_USB_DEVICE_LIBRARY
-  * @{
-  */
-
-
-/** @defgroup USBD_CUSTOM_HID 
-  * @brief usbd core module
-  * @{
-  */ 
-
-
-static uint8_t USBD_Class_Init (USBD_HandleTypeDef *pdev, uint8_t cfgidx);
-static uint8_t  USBD_Class_DeInit (USBD_HandleTypeDef *pdev, uint8_t cfgidx);
-
-static uint8_t  USBD_Setup (USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
-
-static uint8_t  USBD_DataIn (USBD_HandleTypeDef *pdev, uint8_t epnum);
-static uint8_t  USBD_DataOut (USBD_HandleTypeDef *pdev, uint8_t epnum);
-static uint8_t  USBD_EP0_RxReady (USBD_HandleTypeDef  *pdev);
-
-static uint8_t  *USBD_GetCfgDesc (uint16_t *length);
-static uint8_t  *USBD_CUSTOM_HID_GetDeviceQualifierDesc (uint16_t *length);
-
-uint8_t  USBD_CDC_Setup (USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
-uint8_t  USBD_CDC_Init (USBD_HandleTypeDef *pdev,  uint8_t cfgidx);
-uint8_t  USBD_CDC_EP0_RxReady (USBD_HandleTypeDef *pdev);
-uint8_t  USBD_CDC_DataIn (USBD_HandleTypeDef *pdev, uint8_t epnum);
-uint8_t  USBD_CDC_DataOut (USBD_HandleTypeDef *pdev, uint8_t epnum);
-
-/**
-  * @}
-  */ 
-
-/** @defgroup USBD_CUSTOM_HID_Private_Variables
-  * @{
-  */ 
-
-USBD_ClassTypeDef  USBD_CUSTOM_HID = 
+void USBD_HID_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 {
-  USBD_Class_Init,
-  USBD_Class_DeInit,
-  USBD_Setup,
-  NULL, /*EP0_TxSent*/  
-  USBD_EP0_RxReady, /*EP0_RxReady*/ /* STATUS STAGE IN */
-  USBD_DataIn, /*DataIn*/
-  USBD_DataOut,
-  NULL, /*SOF */
-  NULL,
-  NULL,      
-  USBD_GetCfgDesc,
-  USBD_GetCfgDesc, 
-  USBD_GetCfgDesc,
-  USBD_CUSTOM_HID_GetDeviceQualifierDesc,
-};
+    (void)cfgidx;
 
-/* USB Standard Device Descriptor */
-__ALIGN_BEGIN static uint8_t USBD_CUSTOM_HID_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC] __ALIGN_END =
-{
-  USB_LEN_DEV_QUALIFIER_DESC,
-  USB_DESC_TYPE_DEVICE_QUALIFIER,
-  0x00,
-  0x02,
-  0x00,
-  0x00,
-  0x00,
-  0x40,
-  0x01,
-  0x00,
-};
-
-
-static void USBD_HID_Init (USBD_HandleTypeDef *pdev, 
-                               uint8_t cfgidx)
-{
     /* Open EP IN */
     USBD_LL_OpenEP(pdev,
                  CUSTOM_HID_EPIN_ADDR,
@@ -158,56 +83,6 @@ static void USBD_HID_Init (USBD_HandleTypeDef *pdev,
 }
 
 
-
-
-static uint8_t  USBD_Class_Init (USBD_HandleTypeDef *pdev, 
-                               uint8_t cfgidx)
-{
-    USBD_HID_Init(pdev, cfgidx);
-    USBD_CDC_Init(pdev, cfgidx);
-    return 0;
-}
-/**
-  * @brief  USBD_CUSTOM_HID_Init
-  *         DeInitialize the CUSTOM_HID layer
-  * @param  pdev: device instance
-  * @param  cfgidx: Configuration index
-  * @retval status
-  */
-static uint8_t  USBD_Class_DeInit (USBD_HandleTypeDef *pdev, 
-                                 uint8_t cfgidx)
-{
-    // HID
-    /* Close CUSTOM_HID EP IN */
-    USBD_LL_CloseEP(pdev,
-                  CUSTOM_HID_EPIN_ADDR);
-
-    /* Close CUSTOM_HID EP OUT */
-    USBD_LL_CloseEP(pdev,
-                  CUSTOM_HID_EPOUT_ADDR);
-
-    USBD_CustomHID_fops.DeInit();
-
-    // CDC
-    /* Close EP IN */
-    USBD_LL_CloseEP(pdev,
-              CDC_IN_EP);
-
-    /* Close EP OUT */
-    USBD_LL_CloseEP(pdev,
-              CDC_OUT_EP);
-
-    /* Close Command IN EP */
-    USBD_LL_CloseEP(pdev,
-              CDC_CMD_EP);
-
-    USBD_CDC_fops.DeInit();
-
-    return USBD_OK;
-}
-
-
-
 /**
   * @brief  USBD_CUSTOM_HID_Setup
   *         Handle the CUSTOM_HID specific requests
@@ -215,8 +90,7 @@ static uint8_t  USBD_Class_DeInit (USBD_HandleTypeDef *pdev,
   * @param  req: usb requests
   * @retval status
   */
-static uint8_t  USBD_HID_Setup (USBD_HandleTypeDef *pdev, 
-                                USBD_SetupReqTypedef *req)
+uint8_t USBD_HID_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
   uint16_t len = 0;
   uint8_t  *pbuf = NULL;
@@ -297,19 +171,6 @@ static uint8_t  USBD_HID_Setup (USBD_HandleTypeDef *pdev,
 }
 
 
-
-extern const uint8_t usbd_hid_if_num;
-static uint8_t  USBD_Setup (USBD_HandleTypeDef *pdev, 
-                                USBD_SetupReqTypedef *req)
-{
-    if (LOBYTE(req->wIndex) == usbd_hid_if_num) {
-        return USBD_HID_Setup(pdev, req);
-    } else {
-        return USBD_CDC_Setup(pdev, req);
-    }
-}
-
-
 /**
   * @brief  USBD_CUSTOM_HID_SendReport 
   *         Send CUSTOM_HID Report
@@ -338,30 +199,17 @@ uint8_t USBD_CUSTOM_HID_SendReport     (USBD_HandleTypeDef  *pdev,
 }
 
 /**
-  * @brief  USBD_CUSTOM_HID_GetCfgDesc 
-  *         return configuration descriptor
-  * @param  speed : current device speed
-  * @param  length : pointer data length
-  * @retval pointer to descriptor buffer
-  */
-extern const uint8_t USBD_ConfigDescriptor[];
-extern const uint16_t USBD_ConfigDescriptorSize;
-static uint8_t  *USBD_GetCfgDesc (uint16_t *length)
-{
-  *length = USBD_ConfigDescriptorSize;
-  return USBD_ConfigDescriptor;
-}
-
-/**
   * @brief  USBD_CUSTOM_HID_DataIn
   *         handle data IN Stage
   * @param  pdev: device instance
   * @param  epnum: endpoint index
   * @retval status
   */
-static uint8_t  USBD_HID_DataIn (USBD_HandleTypeDef *pdev, 
+uint8_t  USBD_HID_DataIn (USBD_HandleTypeDef *pdev, 
                               uint8_t epnum)
 {
+  (void)pdev;
+  (void)epnum;
   
   /* Ensure that the FIFO is empty before a new transfer, this condition could 
   be caused by  a new transfer before the end of the previous transfer */
@@ -370,17 +218,6 @@ static uint8_t  USBD_HID_DataIn (USBD_HandleTypeDef *pdev,
   return USBD_OK;
 }
 
-
-uint8_t USBD_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
-{
-    if (usbd_hid_ep_intin == epnum) {
-        return USBD_HID_DataIn(pdev, epnum);
-    } else {
-        return USBD_CDC_DataIn(pdev, epnum);
-    }
-}
-
-
 /**
   * @brief  USBD_CUSTOM_HID_DataOut
   *         handle data OUT Stage
@@ -388,9 +225,11 @@ uint8_t USBD_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
   * @param  epnum: endpoint index
   * @retval status
   */
-static uint8_t  USBD_HID_DataOut (USBD_HandleTypeDef *pdev, 
+uint8_t  USBD_HID_DataOut (USBD_HandleTypeDef *pdev, 
                               uint8_t epnum)
 {
+  (void)pdev;
+  (void)epnum;
   
   USBD_CUSTOM_HID_HandleTypeDef     *hhid = &hidClassData;
   
@@ -399,22 +238,16 @@ static uint8_t  USBD_HID_DataOut (USBD_HandleTypeDef *pdev,
   return USBD_OK;
 }
 
-uint8_t USBD_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum)
-{
-    if (usbd_hid_ep_intin == epnum) {
-        return USBD_HID_DataOut(pdev, epnum);
-    } else {
-        return USBD_CDC_DataOut(pdev, epnum);
-    }
-}
 /**
   * @brief  USBD_HID_EP0_RxReady
   *         Handles control request data.
   * @param  pdev: device instance
   * @retval status
   */
-static uint8_t USBD_HID_EP0_RxReady(USBD_HandleTypeDef *pdev)
+uint8_t USBD_HID_EP0_RxReady(USBD_HandleTypeDef *pdev)
 {
+  (void)pdev;
+
   USBD_CUSTOM_HID_HandleTypeDef     *hhid = &hidClassData;
 
   if (hhid->IsReportAvailable == 1)
@@ -425,37 +258,5 @@ static uint8_t USBD_HID_EP0_RxReady(USBD_HandleTypeDef *pdev)
 
   return USBD_OK;
 }
-
-uint8_t USBD_EP0_RxReady(USBD_HandleTypeDef *pdev)
-{
-    USBD_HID_EP0_RxReady(pdev);
-    USBD_CDC_EP0_RxReady(pdev);
-    return USBD_OK;
-}
-
-/**
-* @brief  DeviceQualifierDescriptor 
-*         return Device Qualifier descriptor
-* @param  length : pointer data length
-* @retval pointer to descriptor buffer
-*/
-extern const uint8_t USBD_DeviceQualifier[];
-static uint8_t  *USBD_CUSTOM_HID_GetDeviceQualifierDesc (uint16_t *length)
-{
-  *length = sizeof (USBD_CUSTOM_HID_DeviceQualifierDesc);
-  return USBD_CUSTOM_HID_DeviceQualifierDesc;
-}
-
-
-
-
-/**
-  * @}
-  */ 
-
-
-/**
-  * @}
-  */ 
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
