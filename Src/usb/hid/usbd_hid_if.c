@@ -121,8 +121,6 @@ __NOINLINE void HID_Run_In_Thread_Mode()
 
         HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
         USBD_CUSTOM_HID_SendReport(&USBD_Device, HID_SEND_BUFFER, sizeof(HID_SEND_BUFFER));
-        USBD_LL_PrepareReceive(&USBD_Device, CUSTOM_HID_EPOUT_ADDR , hidClassData.Report_buf, 
-                               USBD_CUSTOMHID_OUTREPORT_BUF_SIZE);
         HAL_NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
     }
 }

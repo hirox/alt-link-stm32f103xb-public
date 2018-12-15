@@ -267,20 +267,31 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   /* Initialize LL Driver */
   HAL_PCD_Init((PCD_HandleTypeDef*)pdev->pData);
 
-  /* Control OUT(0x00)/IN(0x80): 32/32bytes */
-  HAL_PCDEx_PMAConfig(pdev->pData , 0x00 , PCD_SNG_BUF, PMA_ADDR_BASE);
-  HAL_PCDEx_PMAConfig(pdev->pData , 0x80 , PCD_SNG_BUF, PMA_ADDR_BASE + 0x20);
-  /* HID IN/OUT: 64/64bytes */
-  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPIN_ADDR , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 1);
-  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPOUT_ADDR , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 2);
-  /* CDC IN/OUT/CMD: 64/64/8bytes */
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_IN_EP , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 3);
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_OUT_EP , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 4);
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_CMD_EP , PCD_SNG_BUF, PMA_ADDR_BASE + 0x40 * 5);
-  /* CDC2 IN/OUT/CMD: 64/64/8bytes */
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_IN_EP2 , PCD_SNG_BUF, PMA_ADDR_BASE + 0x08 + 0x40 * 5);
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_OUT_EP2 , PCD_SNG_BUF, PMA_ADDR_BASE + 0x08 + 0x40 * 6);
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_CMD_EP2 , PCD_SNG_BUF, PMA_ADDR_BASE + 0x08 + 0x40 * 7);
+  auto offset = PMA_ADDR_BASE;
+
+  /* EP0 Control OUT(0x00)/IN(0x80): 32/32bytes */
+  HAL_PCDEx_PMAConfig(pdev->pData , 0x00 , PCD_SNG_BUF, offset);
+  HAL_PCDEx_PMAConfig(pdev->pData , 0x80 , PCD_SNG_BUF, offset + 0x20);
+
+  offset += 0x40;
+
+  /* EP1 HID IN/OUT: 64bytes (shared) */
+  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPIN_ADDR , PCD_SNG_BUF, offset);
+  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPOUT_ADDR , PCD_SNG_BUF, offset);
+
+  offset += 0x40;
+
+  /* EP2/3 CDC IN/OUT/CMD: 64/64/8bytes */
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_IN_EP , PCD_SNG_BUF, offset);
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_OUT_EP , PCD_SNG_BUF, offset + 0x40 * 1);
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_CMD_EP , PCD_SNG_BUF, offset + 0x40 * 2);
+
+  offset += 0x40 * 2 + 0x08;
+
+  /* EP4/5 CDC2 IN/OUT/CMD: 64/64/8bytes */
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_IN_EP2 , PCD_SNG_BUF, offset);
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_OUT_EP2 , PCD_SNG_BUF, offset + 0x40 * 1);
+  HAL_PCDEx_PMAConfig(pdev->pData , CDC_CMD_EP2 , PCD_SNG_BUF, offset + 0x40 * 2);
 
   return USBD_OK;
 }

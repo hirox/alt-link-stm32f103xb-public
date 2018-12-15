@@ -215,6 +215,10 @@ uint8_t  USBD_HID_DataIn (USBD_HandleTypeDef *pdev,
   be caused by  a new transfer before the end of the previous transfer */
   hidClassData.state = CUSTOM_HID_IDLE;
 
+  /* No IRQ operation is required, because this function is called in ISR, so  */
+  USBD_LL_PrepareReceive(pdev, CUSTOM_HID_EPOUT_ADDR , hidClassData.Report_buf, 
+                         USBD_CUSTOMHID_OUTREPORT_BUF_SIZE);
+
   return USBD_OK;
 }
 
