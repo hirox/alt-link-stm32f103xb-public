@@ -176,13 +176,17 @@
   * @{
   */
 static void UART_SetConfig (UART_HandleTypeDef *huart);
+#if 0
 static HAL_StatusTypeDef UART_Transmit_IT(UART_HandleTypeDef *huart);
+#endif
 static HAL_StatusTypeDef UART_EndTransmit_IT(UART_HandleTypeDef *huart);
 static HAL_StatusTypeDef UART_Receive_IT(UART_HandleTypeDef *huart);
 static void UART_DMATransmitCplt(DMA_HandleTypeDef *hdma);
 static void UART_DMATxHalfCplt(DMA_HandleTypeDef *hdma);
+#if 0
 static void UART_DMAReceiveCplt(DMA_HandleTypeDef *hdma);
 static void UART_DMARxHalfCplt(DMA_HandleTypeDef *hdma);
+#endif
 static void UART_DMAError(DMA_HandleTypeDef *hdma); 
 /**
   * @}
@@ -738,7 +742,7 @@ static void UART_DMATxHalfCplt(DMA_HandleTypeDef *hdma)
   HAL_UART_TxHalfCpltCallback(huart);
 }
 
-
+#if 0
 /**
   * @brief DMA UART receive process half complete callback 
   * @param  hdma: Pointer to a DMA_HandleTypeDef structure that contains
@@ -751,6 +755,7 @@ static void UART_DMARxHalfCplt(DMA_HandleTypeDef *hdma)
 
   HAL_UART_RxHalfCpltCallback(huart); 
 }
+#endif
 
 /**
   * @brief  DMA UART communication error callback.

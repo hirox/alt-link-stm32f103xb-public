@@ -552,15 +552,6 @@ PCD_StateTypeDef HAL_PCD_GetState(PCD_HandleTypeDef *hpcd);
 #define PCD_GET_EP_RX_STATUS(USBx, bEpNum)     ((uint16_t)PCD_GET_ENDPOINT((USBx), (bEpNum)) & USB_EPRX_STAT)
 
 /**
-  * @brief  sets directly the VALID tx/rx-status into the endpoint register
-  * @param  USBx: USB peripheral instance register address.
-  * @param  bEpNum: Endpoint Number.
-  * @retval None
-  */
-#define PCD_SET_EP_TX_VALID(USBx, bEpNum)      (PCD_SET_EP_TX_STATUS((USBx), (bEpNum), USB_EP_TX_VALID))
-#define PCD_SET_EP_RX_VALID(USBx, bEpNum)      (PCD_SET_EP_RX_STATUS((USBx), (bEpNum), USB_EP_RX_VALID))
-
-/**
   * @brief  checks stall condition in an endpoint.
   * @param  USBx: USB peripheral instance register address.
   * @param  bEpNum: Endpoint Number.
