@@ -167,9 +167,6 @@ USBD_StatusTypeDef  USBD_StdDevReq (USBD_HandleTypeDef *pdev , USBD_SetupReqType
 * @param  req: usb request
 * @retval status
 */
-extern const uint8_t usbd_hid_if_num;
-extern const uint8_t usbd_cdc_acm_cif_num;
-extern const uint8_t usbd_cdc_acm_dif_num;
 USBD_StatusTypeDef  USBD_StdItfReq (USBD_HandleTypeDef *pdev , USBD_SetupReqTypedef  *req)
 {
   USBD_StatusTypeDef ret = USBD_OK; 
@@ -178,17 +175,17 @@ USBD_StatusTypeDef  USBD_StdItfReq (USBD_HandleTypeDef *pdev , USBD_SetupReqType
   {
   case USBD_STATE_CONFIGURED:
     
-    if (LOBYTE(req->wIndex) == usbd_hid_if_num || (LOBYTE(req->wIndex) >= usbd_cdc_acm_cif_num || LOBYTE(req->wIndex) <= (usbd_cdc_acm_cif_num + 3))) 
+    if (LOBYTE(req->wIndex) <= USBD_MAX_NUM_INTERFACES) 
     {
-      pdev->pClass->Setup(pdev, req); 
+      pdev->pClass->Setup (pdev, req); 
       
       if((req->wLength == 0)&& (ret == USBD_OK))
       {
          USBD_CtlSendStatus(pdev);
       }
-    }
-    else
-    {
+    } 
+    else 
+    {                                               
        USBD_CtlError(pdev , req);
     }
     break;
