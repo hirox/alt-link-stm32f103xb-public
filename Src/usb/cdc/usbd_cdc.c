@@ -191,24 +191,17 @@ uint8_t  USBD_CDC_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
   */
 uint8_t  USBD_CDC_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {      
-    USBD_CDC_HandleTypeDef   *hcdc;
+  uint32_t index = epnum == (CDC_OUT_EP & 0x7F) ? 0 : 1;
+  USBD_CDC_HandleTypeDef *hcdc = &cdcClassData[index];
 
-    if (epnum == (CDC_OUT_EP & 0x7F)) {
-        hcdc = &cdcClassData[0];
+  /* Get the received data length */
+  uint32_t len = USBD_LL_GetRxDataSize(pdev, epnum);
 
-        /* Get the received data length */
-        uint32_t len = USBD_LL_GetRxDataSize(pdev, epnum);
+  /* USB data will be immediately processed, this allow next USB traffic being 
+  NAKed till the end of the application Xfer */
+  USBD_CDC_fops.Receive(index, hcdc->RxBuffer, len);
 
-        /* USB data will be immediately processed, this allow next USB traffic being 
-        NAKed till the end of the application Xfer */
-        USBD_CDC_fops.Receive(0, hcdc->RxBuffer, len);
-    } else {
-        hcdc = &cdcClassData[1];
-        uint32_t len = USBD_LL_GetRxDataSize(pdev, epnum);
-        USBD_CDC_fops.Receive(1, hcdc->RxBuffer, len);
-    }
-
-    return USBD_OK;
+  return USBD_OK;
 }
 
 
