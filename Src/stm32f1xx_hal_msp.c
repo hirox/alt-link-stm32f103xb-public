@@ -110,7 +110,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
   //[J] UARTの割り込み優先度が低いとOverrunしてしまうので高い優先度にする必要がある
   HAL_NVIC_SetPriority(USARTx_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(USARTx_IRQn);
-  HAL_NVIC_SetPriority(USARTx_IRQn2, 2, 0);
+  HAL_NVIC_SetPriority(USARTx_IRQn2, 2, 1);
   HAL_NVIC_EnableIRQ(USARTx_IRQn2);
 
   /* Enable DMAx clock */
@@ -149,7 +149,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
     HAL_NVIC_SetPriority(USARTx_DMA_TX_IRQn, 6, 0);
     HAL_NVIC_EnableIRQ(USARTx_DMA_TX_IRQn);
   } else {
-    HAL_NVIC_SetPriority(USARTx_DMA_TX_IRQn2, 6, 0);
+    HAL_NVIC_SetPriority(USARTx_DMA_TX_IRQn2, 6, 1);
     HAL_NVIC_EnableIRQ(USARTx_DMA_TX_IRQn2);
   }
   
@@ -158,7 +158,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
   
   /*##-7- Configure the NVIC for TIMx ########################################*/
   /* Set Interrupt Group Priority */ 
-  HAL_NVIC_SetPriority(TIMx_IRQn, 6, 0);
+  HAL_NVIC_SetPriority(TIMx_IRQn, 6, 2);
   
   /* Enable the TIMx global Interrupt */
   HAL_NVIC_EnableIRQ(TIMx_IRQn);
