@@ -67,10 +67,11 @@ typedef struct {
 /** @defgroup USB_CORE_Exported_Functions
   * @{
   */
-uint8_t  USBD_CDC_SetTxBuffer        (uint32_t index, uint8_t  *pbuff, uint16_t length);
-uint8_t  USBD_CDC_SetRxBuffer        (uint32_t index, uint8_t  *pbuff);
-uint8_t  USBD_CDC_ReceivePacket      (uint32_t index, USBD_HandleTypeDef *pdev);
-uint8_t  USBD_CDC_TransmitPacket     (uint32_t index, USBD_HandleTypeDef *pdev);
+uint8_t  USBD_CDC_SetTxBuffer     (uint32_t index, uint8_t  *pbuff, uint16_t length);
+uint8_t  USBD_CDC_SetRxBuffer     (uint32_t index, uint8_t  *pbuff);
+uint8_t  USBD_CDC_ReceivePacket   (uint32_t index, USBD_HandleTypeDef *pdev);
+uint8_t  USBD_CDC_TransmitPacket  (uint32_t index, USBD_HandleTypeDef *pdev);
+uint8_t  USBD_CDC_TxState         (uint32_t index);
 
 uint8_t  USBD_CDC_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum);
 

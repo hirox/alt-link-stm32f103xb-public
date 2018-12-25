@@ -381,34 +381,41 @@ __NOINLINE void CDC_Run_In_Thread_Mode()
     }
 #endif
 #if 1
-    if (CDC.Run_TIM) {
-        CDC.Run_TIM = 0;
+    uint32_t force = CDC.Run_TIM;
+    for (uint32_t i = 0; i < 2; i++) {
+        if (USBD_CDC_TxState(i) == USBD_OK &&
+            CDC.d[i].UserTxBufPtrOut != CDC.d[i].UserTxBufPtrIn &&
+            (force || (CDC.d[i].UserTxBufPtrIn - CDC.d[i].UserTxBufPtrOut) > 0x40 ||
+            CDC.d[i].UserTxBufPtrIn < CDC.d[i].UserTxBufPtrOut)) {
+            uint32_t buffsize;
+            uint8_t ret;
 
-        for (uint32_t i = 0; i < 2; i++) {
-            if(CDC.d[i].UserTxBufPtrOut != CDC.d[i].UserTxBufPtrIn) {
-                uint32_t buffsize;
-                uint8_t ret;
+            if(CDC.d[i].UserTxBufPtrOut > CDC.d[i].UserTxBufPtrIn) {
+                buffsize = APP_TX_DATA_SIZE - CDC.d[i].UserTxBufPtrOut;
+            } else {
+                buffsize = CDC.d[i].UserTxBufPtrIn - CDC.d[i].UserTxBufPtrOut;
 
-                if(CDC.d[i].UserTxBufPtrOut > CDC.d[i].UserTxBufPtrIn) { /* Rollback */
-                    buffsize = APP_TX_DATA_SIZE - CDC.d[i].UserTxBufPtrOut;
-                } else {
-                    buffsize = CDC.d[i].UserTxBufPtrIn - CDC.d[i].UserTxBufPtrOut;
-                }
+                // If transfer is not caused by periodical timer,
+                // align the number of buffsize to be a multiple of 64 for efficiency
+                if (!force || buffsize >= 0x40)
+                    buffsize &= 0xFFFFFFC0;
+            }
 
-                USBD_CDC_SetTxBuffer(i, &CDC.d[i].UserTxBuffer[CDC.d[i].UserTxBufPtrOut], buffsize);
+            USBD_CDC_SetTxBuffer(i, &CDC.d[i].UserTxBuffer[CDC.d[i].UserTxBufPtrOut], buffsize);
 
-                HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
-                ret = USBD_CDC_TransmitPacket(i, &USBD_Device);
-                HAL_NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
-                if(ret == USBD_OK) {
-                    CDC.d[i].UserTxBufPtrOut += buffsize;
-                    if (CDC.d[i].UserTxBufPtrOut == APP_TX_DATA_SIZE) {
-                        CDC.d[i].UserTxBufPtrOut = 0;
-                    }
+            HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
+            ret = USBD_CDC_TransmitPacket(i, &USBD_Device);
+            HAL_NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
+            if(ret == USBD_OK) {
+                CDC.d[i].UserTxBufPtrOut += buffsize;
+                if (CDC.d[i].UserTxBufPtrOut == APP_TX_DATA_SIZE) {
+                    CDC.d[i].UserTxBufPtrOut = 0;
                 }
             }
         }
     }
+    if (force)
+        CDC.Run_TIM = 0;
 #endif
 }
 

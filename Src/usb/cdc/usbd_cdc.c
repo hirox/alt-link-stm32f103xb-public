@@ -67,11 +67,11 @@
 USBD_CDC_HandleTypeDef cdcClassData[2];
 extern USBD_CDC_ItfTypeDef USBD_CDC_fops;
 
-
-
 void USBD_CDC_Init (USBD_HandleTypeDef *pdev, 
                                uint8_t cfgidx)
 {
+    (void) cfgidx;
+
     /* Open EP IN */
     USBD_LL_OpenEP(pdev, CDC_IN_EP, USBD_EP_TYPE_BULK, CDC_DATA_FS_IN_PACKET_SIZE);
     USBD_LL_OpenEP(pdev, CDC_IN_EP2, USBD_EP_TYPE_BULK, CDC_DATA_FS_IN_PACKET_SIZE);
@@ -169,6 +169,8 @@ uint8_t USBD_CDC_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
   */
 uint8_t  USBD_CDC_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
+    (void) pdev;
+
     USBD_CDC_HandleTypeDef *hcdc;
     
     if (epnum == (CDC_IN_EP & 0x7F)) {
@@ -213,6 +215,8 @@ uint8_t  USBD_CDC_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum)
   */
 uint8_t  USBD_CDC_EP0_RxReady(USBD_HandleTypeDef *pdev)
 { 
+    (void) pdev;
+
     USBD_CDC_HandleTypeDef   *hcdc = &cdcClassData[lastIndex];
 
     if((hcdc->CmdOpCode != 0xFF))
@@ -258,12 +262,28 @@ uint8_t  USBD_CDC_SetRxBuffer(uint32_t index, uint8_t  *pbuff)
 extern PCD_HandleTypeDef hpcd;
 
 /**
+  * @brief  USBD_CDC_ReceivePacket
+  *         prepare OUT Endpoint for reception
+  * @param  pdev: device instance
+  * @retval status
+  */
+uint8_t  USBD_CDC_ReceivePacket(uint32_t index, USBD_HandleTypeDef *pdev)
+{
+    USBD_CDC_HandleTypeDef   *hcdc = &cdcClassData[index];
+    uint32_t epnum = (index == 0) ? CDC_OUT_EP : CDC_OUT_EP2;
+
+    /* Prepare Out endpoint to receive next packet */
+    USBD_LL_PrepareReceive(pdev, epnum, hcdc->RxBuffer, CDC_DATA_FS_OUT_PACKET_SIZE);
+    return USBD_OK;
+}
+
+/**
   * @brief  USBD_CDC_TransmitPacket
   * @param  pdev: device instance
   * @retval status
   */
 uint8_t  USBD_CDC_TransmitPacket(uint32_t index, USBD_HandleTypeDef *pdev)
-{      
+{
     USBD_CDC_HandleTypeDef   *hcdc = &cdcClassData[index];
     uint32_t epnum = (index == 0) ? CDC_IN_EP : CDC_IN_EP2;
 
@@ -284,21 +304,17 @@ uint8_t  USBD_CDC_TransmitPacket(uint32_t index, USBD_HandleTypeDef *pdev)
     }
 }
 
-
-/**
-  * @brief  USBD_CDC_ReceivePacket
-  *         prepare OUT Endpoint for reception
-  * @param  pdev: device instance
-  * @retval status
-  */
-uint8_t  USBD_CDC_ReceivePacket(uint32_t index, USBD_HandleTypeDef *pdev)
-{      
+uint8_t USBD_CDC_TxState(uint32_t index)
+{
     USBD_CDC_HandleTypeDef   *hcdc = &cdcClassData[index];
-    uint32_t epnum = (index == 0) ? CDC_OUT_EP : CDC_OUT_EP2;
 
-    /* Prepare Out endpoint to receive next packet */
-    USBD_LL_PrepareReceive(pdev, epnum, hcdc->RxBuffer, CDC_DATA_FS_OUT_PACKET_SIZE);
-    return USBD_OK;
+    if (hcdc->TxState == 0) {
+      return USBD_OK;
+    }
+    else
+    {
+      return USBD_BUSY;
+    }
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
