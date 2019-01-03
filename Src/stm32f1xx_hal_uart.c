@@ -460,10 +460,7 @@ HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData)
   */
 HAL_StatusTypeDef HAL_UART_Transmit_DMA(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size)
 {
-  uint32_t tmp_state = 0;
-
-  tmp_state = huart->State;
-  if(tmp_state == HAL_UART_STATE_READY)
+  if(huart->State == HAL_UART_STATE_READY)
   {
     if((pData == NULL ) || (Size == 0))
       return HAL_ERROR;
@@ -518,10 +515,10 @@ HAL_StatusTypeDef HAL_UART_Transmit_DMA(UART_HandleTypeDef *huart, uint8_t *pDat
   */
 void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
 {
-    uint32_t tmp_flag = 0, tmp_it_source = 0;
+    uint32_t tmp_it_source = 0;
     uint32_t sr = huart->Instance->SR;
 
-    tmp_flag = sr & (UART_FLAG_PE | UART_FLAG_FE | UART_FLAG_NE | UART_FLAG_ORE);
+    uint32_t tmp_flag = sr & (UART_FLAG_PE | UART_FLAG_FE | UART_FLAG_NE | UART_FLAG_ORE);
     if (tmp_flag != RESET) {
         tmp_flag = __HAL_UART_GET_FLAG(huart, UART_FLAG_PE);
         tmp_it_source = __HAL_UART_GET_IT_SOURCE(huart, UART_IT_PE);  

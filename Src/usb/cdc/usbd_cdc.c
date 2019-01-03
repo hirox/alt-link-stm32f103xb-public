@@ -83,20 +83,18 @@ void USBD_CDC_Init (USBD_HandleTypeDef *pdev,
     /* Open Command IN EP */
     USBD_LL_OpenEP(pdev, CDC_CMD_EP, USBD_EP_TYPE_INTR, CDC_CMD_PACKET_SIZE);
     USBD_LL_OpenEP(pdev, CDC_CMD_EP2, USBD_EP_TYPE_INTR, CDC_CMD_PACKET_SIZE);
-  
-    /* Init  physical Interface components */
-    USBD_CDC_fops.Init();
-    
+
     /* Init Xfer states */
     USBD_CDC_HandleTypeDef* hcdc = &cdcClassData[0];
     hcdc->TxState =0;
     hcdc->RxState =0;
-    USBD_LL_PrepareReceive(pdev, CDC_OUT_EP, hcdc->RxBuffer, CDC_DATA_FS_OUT_PACKET_SIZE);
 
     hcdc = &cdcClassData[1];
     hcdc->TxState =0;
     hcdc->RxState =0;
-    USBD_LL_PrepareReceive(pdev, CDC_OUT_EP2, hcdc->RxBuffer, CDC_DATA_FS_OUT_PACKET_SIZE);
+
+    /* Init  physical Interface components */
+    USBD_CDC_fops.Init();
 }
 
 extern const uint8_t usbd_cdc_acm_cif_num;
@@ -201,7 +199,9 @@ uint8_t  USBD_CDC_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum)
 
   /* USB data will be immediately processed, this allow next USB traffic being 
   NAKed till the end of the application Xfer */
-  USBD_CDC_fops.Receive(index, hcdc->RxBuffer, len);
+  USBD_CDC_fops.Receive(index, len);
+
+  hcdc->RxState = 0;
 
   return USBD_OK;
 }
@@ -227,38 +227,6 @@ uint8_t  USBD_CDC_EP0_RxReady(USBD_HandleTypeDef *pdev)
   return USBD_OK;
 }
 
-
-/**
-  * @brief  USBD_CDC_SetTxBuffer
-  * @param  pdev: device instance
-  * @param  pbuff: Tx Buffer
-  * @retval status
-  */
-uint8_t  USBD_CDC_SetTxBuffer(uint32_t index, uint8_t *pbuff, uint16_t length)
-{
-  USBD_CDC_HandleTypeDef   *hcdc = &cdcClassData[index];
-  
-  hcdc->TxBuffer = pbuff;
-  hcdc->TxLength = length;
-  
-  return USBD_OK;
-}
-
-
-/**
-  * @brief  USBD_CDC_SetRxBuffer
-  * @param  pdev: device instance
-  * @param  pbuff: Rx Buffer
-  * @retval status
-  */
-uint8_t  USBD_CDC_SetRxBuffer(uint32_t index, uint8_t  *pbuff)
-{
-  USBD_CDC_HandleTypeDef   *hcdc = &cdcClassData[index];
-  hcdc->RxBuffer = pbuff;
-  
-  return USBD_OK;
-}
-
 extern PCD_HandleTypeDef hpcd;
 
 /**
@@ -267,13 +235,15 @@ extern PCD_HandleTypeDef hpcd;
   * @param  pdev: device instance
   * @retval status
   */
-uint8_t  USBD_CDC_ReceivePacket(uint32_t index, USBD_HandleTypeDef *pdev)
+uint8_t  USBD_CDC_ReceivePacket(uint32_t index, uint8_t *pbuff, USBD_HandleTypeDef *pdev)
 {
     USBD_CDC_HandleTypeDef   *hcdc = &cdcClassData[index];
     uint32_t epnum = (index == 0) ? CDC_OUT_EP : CDC_OUT_EP2;
 
     /* Prepare Out endpoint to receive next packet */
-    USBD_LL_PrepareReceive(pdev, epnum, hcdc->RxBuffer, CDC_DATA_FS_OUT_PACKET_SIZE);
+    USBD_LL_PrepareReceive(pdev, epnum, pbuff, CDC_DATA_FS_OUT_PACKET_SIZE);
+
+    hcdc->RxState = 1;
     return USBD_OK;
 }
 
@@ -282,7 +252,7 @@ uint8_t  USBD_CDC_ReceivePacket(uint32_t index, USBD_HandleTypeDef *pdev)
   * @param  pdev: device instance
   * @retval status
   */
-uint8_t  USBD_CDC_TransmitPacket(uint32_t index, USBD_HandleTypeDef *pdev)
+uint8_t  USBD_CDC_TransmitPacket(uint32_t index, uint8_t *pbuff, uint16_t length, USBD_HandleTypeDef *pdev)
 {
     USBD_CDC_HandleTypeDef   *hcdc = &cdcClassData[index];
     uint32_t epnum = (index == 0) ? CDC_IN_EP : CDC_IN_EP2;
@@ -292,10 +262,7 @@ uint8_t  USBD_CDC_TransmitPacket(uint32_t index, USBD_HandleTypeDef *pdev)
       hcdc->TxState = 1;
       
       /* Transmit next packet */
-      USBD_LL_Transmit(pdev,
-                       epnum,
-                       hcdc->TxBuffer,
-                       hcdc->TxLength);
+      USBD_LL_Transmit(pdev, epnum, pbuff, length);
       return USBD_OK;
     }
     else

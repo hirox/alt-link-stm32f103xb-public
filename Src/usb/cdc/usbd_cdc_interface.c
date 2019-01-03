@@ -50,8 +50,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define APP_RX_DATA_SIZE  192
-#define APP_TX_DATA_SIZE  512
+#define APP_RX_DATA_SIZE  512
+#define APP_TX_DATA_SIZE  1024
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -72,19 +72,18 @@ USBD_CDC_LineCodingTypeDef LineCoding2 =
 
 struct {
     struct {
-        uint8_t UserRxBuffer[APP_RX_DATA_SIZE];/* Received Data over USB are stored in this buffer */
+        uint8_t UserRxBuffer[APP_RX_DATA_SIZE + CDC_DATA_FS_OUT_PACKET_SIZE];/* Received Data over USB are stored in this buffer */
         uint8_t UserTxBuffer[APP_TX_DATA_SIZE];/* Received Data over UART (CDC interface) are stored in this buffer */
         uint32_t UserTxBufPtrIn;/* Increment this pointer or roll it back to
                                        start address when data are received over USART */
         uint32_t UserTxBufPtrOut; /* Increment this pointer or roll it back to
                                          start address when data are sent over USB */
-        uint32_t UserRxBufPtr;
+        uint32_t RxOverWriteSize;
+        uint32_t RxBufWritePos;
+        uint32_t RxBufReadPos;
         uint32_t Run_Receive_From_HOST;
         uint32_t Run_PortConfig;
-        uint8_t *TransmitBuf;
-        uint32_t TransmitLen;
-        uint32_t DMA_Transferring;
-        uint32_t Run_DMA_Transfer_Finished;
+        uint32_t Run_DMA_Transfer;
     } d[2];
     uint32_t Run_TIM;
 } CDC = {0};
@@ -100,7 +99,7 @@ extern USBD_HandleTypeDef  USBD_Device;
 static int8_t CDC_Itf_Init     (void);
 static int8_t CDC_Itf_DeInit   (void);
 static int8_t CDC_Itf_Control  (uint32_t index, uint8_t cmd, uint8_t* pbuf, uint16_t length);
-static int8_t CDC_Itf_Receive  (uint32_t index, uint8_t*, uint32_t);
+static int8_t CDC_Itf_Receive  (uint32_t index, uint32_t);
 
 static void Error_Handler(void);
 static void ComPort_Config(uint32_t index);
@@ -117,8 +116,7 @@ USBD_CDC_ItfTypeDef USBD_CDC_fops =
 /* Private functions ---------------------------------------------------------*/
 
 static void Clear_UART_Status(uint32_t index) {
-    CDC.d[index].DMA_Transferring = 0;
-    CDC.d[index].Run_DMA_Transfer_Finished = 0;
+    CDC.d[index].Run_DMA_Transfer = 1;
 }
 
 /**
@@ -171,8 +169,7 @@ static int8_t CDC_Itf_Init(void)
   
     /*##-5- Set Application Buffers ############################################*/
     for (uint32_t i = 0; i < 2; i++) {
-        USBD_CDC_SetTxBuffer(i, CDC.d[i].UserTxBuffer, 0);
-        USBD_CDC_SetRxBuffer(i, CDC.d[i].UserRxBuffer);
+        USBD_CDC_ReceivePacket(i, CDC.d[i].UserRxBuffer, &USBD_Device);
     }
 
     return (USBD_OK);
@@ -209,7 +206,9 @@ static int8_t CDC_Itf_DeInit(void)
   */
 static int8_t CDC_Itf_Control(uint32_t index, uint8_t cmd, uint8_t* pbuf, uint16_t length)
 { 
-    // inside IRQ
+  (void) length;
+
+  // inside USB IRQ
   switch (cmd)
   {
   case CDC_SEND_ENCAPSULATED_COMMAND:
@@ -299,17 +298,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   */
 uint8_t* HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    // inside IRQ
+    // inside UART IRQ
     uint32_t i = huart->Instance == USARTx ? 0 : 1;
+    uint32_t ptrIn = CDC.d[i].UserTxBufPtrIn;
 
     /* Increment Index for buffer writing */
-    CDC.d[i].UserTxBufPtrIn++;
+    ptrIn++;
 
     /* To avoid buffer overflow */
-    CDC.d[i].UserTxBufPtrIn &= 0x1FF;
+    ptrIn &= (APP_TX_DATA_SIZE - 1);
+
+    CDC.d[i].UserTxBufPtrIn = ptrIn;
 
     /* Start another reception: provide the buffer pointer with offset and the buffer size */
-    return (uint8_t *)(CDC.d[i].UserTxBuffer + CDC.d[i].UserTxBufPtrIn);
+    return &CDC.d[i].UserTxBuffer[ptrIn];
+}
+
+static void CDC_Receive(uint32_t i) {
+    USBD_CDC_ReceivePacket(i, &CDC.d[i].UserRxBuffer[CDC.d[i].RxBufWritePos & (APP_RX_DATA_SIZE - 1)], &USBD_Device);
 }
 
 /**
@@ -320,33 +326,64 @@ uint8_t* HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   * @param  Len: Number of data received (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
-static int8_t CDC_Itf_Receive(uint32_t index, uint8_t* buf, uint32_t len)
+static int8_t CDC_Itf_Receive(uint32_t index, uint32_t len)
 {
-    // inside IRQ
+    // inside USB IRQ
     uint32_t i = index == 0 ? 0 : 1;
-    CDC.d[i].TransmitBuf = buf;
-    CDC.d[i].TransmitLen = len;
 
-    CDC.d[i].UserRxBufPtr += len;
-    if (CDC.d[i].UserRxBufPtr + 64 > APP_RX_DATA_SIZE) {
-        CDC.d[i].UserRxBufPtr = 0;
+    int32_t overwrite = (signed)(CDC.d[i].RxBufWritePos & (APP_RX_DATA_SIZE - 1)) + len - APP_RX_DATA_SIZE;
+    if (overwrite > 0) {
+        CDC.d[i].RxOverWriteSize = (unsigned)overwrite;
     }
 
-    CDC.d[i].Run_Receive_From_HOST = 1;
+    CDC.d[i].RxBufWritePos += len;
+
+    // If empty space is larger than 128, it is possible to allocate continuous 64 bytes
+    if (APP_RX_DATA_SIZE - CDC_DATA_FS_OUT_PACKET_SIZE * 2 >= (CDC.d[i].RxBufWritePos - CDC.d[i].RxBufReadPos)) {
+        CDC_Receive(i);
+    } else {
+        CDC.d[i].Run_Receive_From_HOST = 1;
+    }
+
     return (USBD_OK);
 }
 
+// USB OUT -> UART DMA
+static void UART_DMA_Transmit(uint32_t i) {
+    uint32_t buffsize = CDC.d[i].RxBufWritePos - CDC.d[i].RxBufReadPos;
+    uint32_t maxsize = APP_RX_DATA_SIZE + CDC.d[i].RxOverWriteSize - (CDC.d[i].RxBufReadPos & (APP_RX_DATA_SIZE - 1));
+    if (buffsize > maxsize) {
+        buffsize = maxsize;
+        CDC.d[i].RxOverWriteSize = 0;
+    }
+    HAL_UART_Transmit_DMA(&UartHandle[i], &CDC.d[i].UserRxBuffer[CDC.d[i].RxBufReadPos & (APP_RX_DATA_SIZE - 1)], buffsize);
+}
+
 /**
-  * @brief  Tx Transfer completed callback
+  * @brief  DMA Tx Transfer completed callback
   * @param  huart: UART handle
   * @retval None
   */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-    // inside IRQ
+    // inside UART IRQ
     uint32_t i = huart->Instance == USARTx ? 0 : 1;
-    /* Initiate next USB packet transfer once UART completes transfer (transmitting data over Tx line) */
-    CDC.d[i].Run_DMA_Transfer_Finished = 1;
+
+#if 1
+    CDC.d[i].RxBufReadPos += huart->TxXferSize;
+    CDC.d[i].Run_DMA_Transfer = 1;
+#else
+    CDC.d[i].RxBufReadPos += huart->TxXferSize;
+
+    if (CDC.d[i].RxBufReadPos != CDC.d[i].RxBufWritePos) {
+        // kick DMA transfer inside IRQ
+        UART_DMA_Transmit(i);
+    } else {
+        /* Initiate next USB packet transfer once UART completes transfer
+        (transmitting data over Tx line) */
+        CDC.d[i].Run_DMA_Transfer = 1;
+    }
+#endif
 }
 
 // noinline is necessary to output correct code
@@ -361,27 +398,30 @@ __NOINLINE void CDC_Run_In_Thread_Mode()
             HAL_UART_Receive_IT(&UartHandle[i], (uint8_t *)(CDC.d[i].UserTxBuffer + CDC.d[i].UserTxBufPtrIn));
         }
 
-        if (CDC.d[i].Run_DMA_Transfer_Finished) {
-            CDC.d[i].Run_DMA_Transfer_Finished = 0;
-            CDC.d[i].DMA_Transferring = 0;
-        }
-        if (CDC.d[i].Run_Receive_From_HOST && CDC.d[i].DMA_Transferring == 0) {
-            CDC.d[i].Run_Receive_From_HOST = 0;
-            HAL_UART_Transmit_DMA(&UartHandle[i], CDC.d[i].TransmitBuf, CDC.d[i].TransmitLen);
-            CDC.d[i].DMA_Transferring = 1;
-
-            USBD_CDC_SetRxBuffer(i, &CDC.d[i].UserRxBuffer[CDC.d[i].UserRxBufPtr]);
-
-            // USBのIRQの中でUSBが叩かれることがあるので競合してしまう可能性がある
-            // IRQを止めることで競合の可能性を排除する
+        // Run UART TX with DMA
+        if (CDC.d[i].Run_DMA_Transfer && CDC.d[i].RxBufReadPos != CDC.d[i].RxBufWritePos) {
             HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
-            USBD_CDC_ReceivePacket(i, &USBD_Device);
+            CDC.d[i].Run_DMA_Transfer = 0;
+            UART_DMA_Transmit(i);
             HAL_NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
+        }
+
+        // Receive USB OUT Packet
+        if (CDC.d[i].Run_Receive_From_HOST) {
+            // If empty space is larger than 128, it is possible to allocate continuous 64 bytes
+            if (APP_RX_DATA_SIZE - CDC_DATA_FS_OUT_PACKET_SIZE * 2 >= (CDC.d[i].RxBufWritePos - CDC.d[i].RxBufReadPos)) {
+                HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
+                CDC.d[i].Run_Receive_From_HOST = 0;
+                CDC_Receive(i);
+                HAL_NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
+            }
         }
     }
 #endif
 #if 1
     uint32_t force = CDC.Run_TIM;
+    if (force)
+        CDC.Run_TIM = 0;
     for (uint32_t i = 0; i < 2; i++) {
         if (USBD_CDC_TxState(i) == USBD_OK &&
             CDC.d[i].UserTxBufPtrOut != CDC.d[i].UserTxBufPtrIn &&
@@ -401,10 +441,8 @@ __NOINLINE void CDC_Run_In_Thread_Mode()
                     buffsize &= 0xFFFFFFC0;
             }
 
-            USBD_CDC_SetTxBuffer(i, &CDC.d[i].UserTxBuffer[CDC.d[i].UserTxBufPtrOut], buffsize);
-
             HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
-            ret = USBD_CDC_TransmitPacket(i, &USBD_Device);
+            ret = USBD_CDC_TransmitPacket(i, &CDC.d[i].UserTxBuffer[CDC.d[i].UserTxBufPtrOut], buffsize, &USBD_Device);
             HAL_NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
             if(ret == USBD_OK) {
                 CDC.d[i].UserTxBufPtrOut += buffsize;
@@ -414,8 +452,6 @@ __NOINLINE void CDC_Run_In_Thread_Mode()
             }
         }
     }
-    if (force)
-        CDC.Run_TIM = 0;
 #endif
 }
 
