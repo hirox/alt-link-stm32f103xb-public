@@ -310,7 +310,19 @@ HAL_StatusTypeDef HAL_UART_Init(UART_HandleTypeDef *huart)
   huart->ErrorCode = HAL_UART_ERROR_NONE;
   huart->gState= HAL_UART_STATE_READY;
   huart->RxState= HAL_UART_STATE_READY;
-  
+
+  /* Set the UART DMA transfer complete callback */
+  huart->hdmatx->XferCpltCallback = UART_DMATransmitCplt;
+
+  /* Set the UART DMA Half transfer complete callback */
+  huart->hdmatx->XferHalfCpltCallback = NULL; //UART_DMATxHalfCplt;
+
+  /* Set the DMA error callback */
+  huart->hdmatx->XferErrorCallback = UART_DMAError;
+
+  /* Set the DMA abort callback */
+  huart->hdmatx->XferAbortCallback = NULL;
+
   return HAL_OK;
 }
 
@@ -906,6 +918,7 @@ HAL_StatusTypeDef HAL_UART_Transmit_DMA(UART_HandleTypeDef *huart, uint8_t *pDat
   /* Check that a Tx process is not already ongoing */
   if(huart->gState == HAL_UART_STATE_READY)
   {
+#if 0
     if((pData == NULL) || (Size == 0U))
     {
       return HAL_ERROR;
@@ -913,6 +926,7 @@ HAL_StatusTypeDef HAL_UART_Transmit_DMA(UART_HandleTypeDef *huart, uint8_t *pDat
 
     /* Process Locked */
     __HAL_LOCK(huart);
+#endif
 
     huart->pTxBuffPtr = pData;
     huart->TxXferSize = Size;
@@ -921,6 +935,7 @@ HAL_StatusTypeDef HAL_UART_Transmit_DMA(UART_HandleTypeDef *huart, uint8_t *pDat
     huart->ErrorCode = HAL_UART_ERROR_NONE;
     huart->gState = HAL_UART_STATE_BUSY_TX;
 
+#if 0
     /* Set the UART DMA transfer complete callback */
     huart->hdmatx->XferCpltCallback = UART_DMATransmitCplt;
 
@@ -932,6 +947,7 @@ HAL_StatusTypeDef HAL_UART_Transmit_DMA(UART_HandleTypeDef *huart, uint8_t *pDat
 
     /* Set the DMA abort callback */
     huart->hdmatx->XferAbortCallback = NULL;
+#endif
 
     /* Enable the UART transmit DMA channel */
     tmp = (uint32_t*)&pData;
@@ -940,8 +956,10 @@ HAL_StatusTypeDef HAL_UART_Transmit_DMA(UART_HandleTypeDef *huart, uint8_t *pDat
     /* Clear the TC flag in the SR register by writing 0 to it */
     __HAL_UART_CLEAR_FLAG(huart, UART_FLAG_TC);
 
+#if 0
     /* Process Unlocked */
     __HAL_UNLOCK(huart);
+#endif
 
     /* Enable the DMA transfer for transmit request by setting the DMAT bit
        in the UART CR3 register */

@@ -384,7 +384,7 @@ HAL_StatusTypeDef HAL_DMA_Start_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress,
 
   /* Process locked */
   __HAL_LOCK(hdma);
-  
+
   if(HAL_DMA_STATE_READY == hdma->State)
   {
     /* Change DMA peripheral state */
@@ -399,6 +399,7 @@ HAL_StatusTypeDef HAL_DMA_Start_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress,
     
     /* Enable the transfer complete interrupt */
     /* Enable the transfer Error interrupt */
+#if 0
     if(NULL != hdma->XferHalfCpltCallback)
     {
       /* Enable the Half transfer complete interrupt as well */
@@ -406,9 +407,12 @@ HAL_StatusTypeDef HAL_DMA_Start_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress,
     }
     else
     {
+#endif
       __HAL_DMA_DISABLE_IT(hdma, DMA_IT_HT);
       __HAL_DMA_ENABLE_IT(hdma, (DMA_IT_TC | DMA_IT_TE));
+#if 0
     }
+#endif
     /* Enable the Peripheral */
     __HAL_DMA_ENABLE(hdma);
   }
@@ -607,7 +611,8 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
 {
   uint32_t flag_it = hdma->DmaBaseAddress->ISR;
   uint32_t source_it = hdma->Instance->CCR;
-  
+
+#if 0
   /* Half Transfer Complete Interrupt management ******************************/
   if (((flag_it & (DMA_FLAG_HT1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_HT) != RESET))
   {
@@ -632,6 +637,9 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
 
   /* Transfer Complete Interrupt management ***********************************/
   else if (((flag_it & (DMA_FLAG_TC1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_TC) != RESET))
+#else
+  if (((flag_it & (DMA_FLAG_TC1 << hdma->ChannelIndex)) != RESET) && ((source_it & DMA_IT_TC) != RESET))
+#endif
   {
     if((hdma->Instance->CCR & DMA_CCR_CIRC) == 0U)
     {
