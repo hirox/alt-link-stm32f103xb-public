@@ -119,6 +119,7 @@ USBD_CDC_ItfTypeDef USBD_CDC_fops =
 /* Private functions ---------------------------------------------------------*/
 
 static void Clear_UART_Status(uint32_t i) {
+    CDC.d[i].UserTxBufPtrOut = 0;
     CDC.d[i].RxOverWriteSize = 0;
     CDC.d[i].RxBufWritePos = 0;
     CDC.d[i].RxBufReadPos = 0;
@@ -133,6 +134,8 @@ static void Receive_DMA(uint32_t i) {
     }
 
     __HAL_DMA_DISABLE_IT(UartHandle[i].hdmatx, (DMA_IT_HT | DMA_IT_TC));
+    __HAL_UART_DISABLE_IT(&UartHandle[i], UART_IT_PE);  // ignore parity error
+    __HAL_UART_DISABLE_IT(&UartHandle[i], UART_IT_ERR); // ignore frame, noise, overrun errors
 }
 
 /**
@@ -408,7 +411,7 @@ __NOINLINE void CDC_Run_In_Thread_Mode()
 
         uint32_t ptrIn = TX_BUF_PTR_IN(i);
         if (CDC.d[i].UserTxBufPtrOut != ptrIn &&
-            (force || (ptrIn - CDC.d[i].UserTxBufPtrOut) > 0x40 ||
+            (force || (ptrIn - CDC.d[i].UserTxBufPtrOut) >= 0x40 ||
             ptrIn < CDC.d[i].UserTxBufPtrOut)) {
             uint32_t buffsize;
             uint8_t ret;
