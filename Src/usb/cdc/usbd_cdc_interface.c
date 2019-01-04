@@ -118,8 +118,21 @@ USBD_CDC_ItfTypeDef USBD_CDC_fops =
 
 /* Private functions ---------------------------------------------------------*/
 
-static void Clear_UART_Status(uint32_t index) {
-    CDC.d[index].Run_DMA_Transfer = 1;
+static void Clear_UART_Status(uint32_t i) {
+    CDC.d[i].RxOverWriteSize = 0;
+    CDC.d[i].RxBufWritePos = 0;
+    CDC.d[i].RxBufReadPos = 0;
+    CDC.d[i].Run_Receive_From_HOST = 1;
+    CDC.d[i].Run_DMA_Transfer = 1;
+}
+
+static void Receive_DMA(uint32_t i) {
+    if (HAL_UART_Receive_DMA(&UartHandle[i], &CDC.d[i].UserTxBuffer[0], sizeof(CDC.d[i].UserTxBuffer)) != HAL_OK) {
+        /* Transfer error in reception process */
+        Error_Handler();
+    }
+
+    __HAL_DMA_DISABLE_IT(UartHandle[i].hdmatx, (DMA_IT_HT | DMA_IT_TC));
 }
 
 /**
@@ -154,10 +167,7 @@ static int8_t CDC_Itf_Init(void)
 
         /*##-2- Put UART peripheral in DMA reception process ########################*/
         /* Any data received will be stored in "UserTxBuffer" buffer  */
-        if (HAL_UART_Receive_DMA(&UartHandle[i], &CDC.d[i].UserTxBuffer[0], sizeof(CDC.d[i].UserTxBuffer)) != HAL_OK) {
-            /* Transfer error in reception process */
-            Error_Handler();
-        }
+        Receive_DMA(i);
     }
 
     /*##-3- Configure the TIM Base generation  #################################*/
@@ -168,11 +178,6 @@ static int8_t CDC_Itf_Init(void)
     if(HAL_TIM_Base_Start_IT(&TimHandle) != HAL_OK) {
         /* Starting Error */
         Error_Handler();
-    }
-  
-    /*##-5- Set Application Buffers ############################################*/
-    for (uint32_t i = 0; i < 2; i++) {
-        USBD_CDC_ReceivePacket(i, CDC.d[i].UserRxBuffer, &USBD_Device);
     }
 
     return (USBD_OK);
@@ -349,10 +354,6 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
     // inside UART IRQ
     uint32_t i = huart->Instance == USARTx ? 0 : 1;
 
-#if 1
-    CDC.d[i].RxBufReadPos += huart->TxXferSize;
-    CDC.d[i].Run_DMA_Transfer = 1;
-#else
     CDC.d[i].RxBufReadPos += huart->TxXferSize;
 
     if (CDC.d[i].RxBufReadPos != CDC.d[i].RxBufWritePos) {
@@ -363,7 +364,6 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
         (transmitting data over Tx line) */
         CDC.d[i].Run_DMA_Transfer = 1;
     }
-#endif
 }
 
 // noinline is necessary to output correct code
@@ -375,7 +375,7 @@ __NOINLINE void CDC_Run_In_Thread_Mode()
             // [TODO] Run_PortConfigを毎回動かすと HAL_UART_STATE_BUSY_TX で HAL_UART_Transmit_DMA がエラーになる謎がある
             CDC.d[i].Run_PortConfig = 0;
             ComPort_Config(i);
-            HAL_UART_Receive_DMA(&UartHandle[i], &CDC.d[i].UserTxBuffer[0], sizeof(CDC.d[i].UserTxBuffer));
+            Receive_DMA(i);
         }
 
         // Run UART TX with DMA
