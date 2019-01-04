@@ -74,8 +74,6 @@ struct {
     struct {
         uint8_t UserRxBuffer[APP_RX_DATA_SIZE + CDC_DATA_FS_OUT_PACKET_SIZE];/* Received Data over USB are stored in this buffer */
         uint8_t UserTxBuffer[APP_TX_DATA_SIZE];/* Received Data over UART (CDC interface) are stored in this buffer */
-        uint32_t UserTxBufPtrIn;/* Increment this pointer or roll it back to
-                                       start address when data are received over USART */
         uint32_t UserTxBufPtrOut; /* Increment this pointer or roll it back to
                                          start address when data are sent over USB */
         uint32_t RxOverWriteSize;
@@ -94,6 +92,11 @@ UART_HandleTypeDef UartHandle[2];
 TIM_HandleTypeDef  TimHandle;
 /* USB handler declaration */
 extern USBD_HandleTypeDef  USBD_Device;
+
+#define TX_BUF_PTR_IN(i) ( \
+      (sizeof(CDC.d[i].UserTxBuffer) - UartHandle[i].hdmarx->Instance->CNDTR) & \
+      (sizeof(CDC.d[i].UserTxBuffer) - 1) \
+    )
 
 /* Private function prototypes -----------------------------------------------*/
 static int8_t CDC_Itf_Init     (void);
@@ -149,9 +152,9 @@ static int8_t CDC_Itf_Init(void)
             Error_Handler();
         }
 
-        /*##-2- Put UART peripheral in IT reception process ########################*/
+        /*##-2- Put UART peripheral in DMA reception process ########################*/
         /* Any data received will be stored in "UserTxBuffer" buffer  */
-        if(HAL_UART_Receive_IT(&UartHandle[i], (uint8_t *)CDC.d[i].UserTxBuffer) != HAL_OK) {
+        if (HAL_UART_Receive_DMA(&UartHandle[i], &CDC.d[i].UserTxBuffer[0], sizeof(CDC.d[i].UserTxBuffer)) != HAL_OK) {
             /* Transfer error in reception process */
             Error_Handler();
         }
@@ -291,29 +294,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     CDC.Run_TIM = 1;
 }
 
-/**
-  * @brief  UART Rx Transfer completed callback
-  * @param  huart: UART handle
-  * @retval None
-  */
-uint8_t* HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-    // inside UART IRQ
-    uint32_t i = huart->Instance == USARTx ? 0 : 1;
-    uint32_t ptrIn = CDC.d[i].UserTxBufPtrIn;
-
-    /* Increment Index for buffer writing */
-    ptrIn++;
-
-    /* To avoid buffer overflow */
-    ptrIn &= (APP_TX_DATA_SIZE - 1);
-
-    CDC.d[i].UserTxBufPtrIn = ptrIn;
-
-    /* Start another reception: provide the buffer pointer with offset and the buffer size */
-    return &CDC.d[i].UserTxBuffer[ptrIn];
-}
-
 static void CDC_Receive(uint32_t i) {
     USBD_CDC_ReceivePacket(i, &CDC.d[i].UserRxBuffer[CDC.d[i].RxBufWritePos & (APP_RX_DATA_SIZE - 1)], &USBD_Device);
 }
@@ -395,7 +375,7 @@ __NOINLINE void CDC_Run_In_Thread_Mode()
             // [TODO] Run_PortConfigを毎回動かすと HAL_UART_STATE_BUSY_TX で HAL_UART_Transmit_DMA がエラーになる謎がある
             CDC.d[i].Run_PortConfig = 0;
             ComPort_Config(i);
-            HAL_UART_Receive_IT(&UartHandle[i], (uint8_t *)(CDC.d[i].UserTxBuffer + CDC.d[i].UserTxBufPtrIn));
+            HAL_UART_Receive_DMA(&UartHandle[i], &CDC.d[i].UserTxBuffer[0], sizeof(CDC.d[i].UserTxBuffer));
         }
 
         // Run UART TX with DMA
@@ -423,17 +403,20 @@ __NOINLINE void CDC_Run_In_Thread_Mode()
     if (force)
         CDC.Run_TIM = 0;
     for (uint32_t i = 0; i < 2; i++) {
-        if (USBD_CDC_TxState(i) == USBD_OK &&
-            CDC.d[i].UserTxBufPtrOut != CDC.d[i].UserTxBufPtrIn &&
-            (force || (CDC.d[i].UserTxBufPtrIn - CDC.d[i].UserTxBufPtrOut) > 0x40 ||
-            CDC.d[i].UserTxBufPtrIn < CDC.d[i].UserTxBufPtrOut)) {
+        if (USBD_CDC_TxState(i) != USBD_OK)
+            continue;
+
+        uint32_t ptrIn = TX_BUF_PTR_IN(i);
+        if (CDC.d[i].UserTxBufPtrOut != ptrIn &&
+            (force || (ptrIn - CDC.d[i].UserTxBufPtrOut) > 0x40 ||
+            ptrIn < CDC.d[i].UserTxBufPtrOut)) {
             uint32_t buffsize;
             uint8_t ret;
 
-            if(CDC.d[i].UserTxBufPtrOut > CDC.d[i].UserTxBufPtrIn) {
+            if(CDC.d[i].UserTxBufPtrOut > ptrIn) {
                 buffsize = APP_TX_DATA_SIZE - CDC.d[i].UserTxBufPtrOut;
             } else {
-                buffsize = CDC.d[i].UserTxBufPtrIn - CDC.d[i].UserTxBufPtrOut;
+                buffsize = ptrIn - CDC.d[i].UserTxBufPtrOut;
 
                 // If transfer is not caused by periodical timer,
                 // align the number of buffsize to be a multiple of 64 for efficiency

@@ -10,7 +10,7 @@ CMSISDAP         = $(DAPLINK)/daplink/cmsis-dap
 
 SRCS             = Src/main.c Src/stm32f1xx_it.c Src/stm32f1xx_hal_msp.c Src/system_stm32f1xx.c Src/usbd_conf.c Src/usbd_desc.c
 SRCS            += Src/usb/usbd.c Src/usb/hid/usbd_hid.c Src/usb/hid/usbd_hid_if.c Src/stm32f1xx_hal_pcd.c
-SRCS            += Src/usb/cdc/usbd_cdc_interface.c Src/usb/cdc/usbd_cdc.c Src/usbd_ctlreq.c Src/stm32f1xx_hal_uart.c
+SRCS            += Src/usb/cdc/usbd_cdc_interface.c Src/usb/cdc/usbd_cdc.c Src/usbd_ctlreq.c
 SRCS            += $(CMSISDAP)/DAP.c $(CMSISDAP)/JTAG_DP.c $(CMSISDAP)/SW_DP.c
 
 SRCS            += $(STM32SDK)/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c
@@ -23,6 +23,8 @@ SRCS            += $(STM32SDK)/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_ti
 SRCS            += $(STM32SDK)/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c
 SRCS            += $(STM32SDK)/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c
 SRCS            += $(STM32SDK)/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_ll_usb.c
+SRCS            += $(STM32SDK)/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c
+
 SRCS            += $(STM32SDK)/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c
 SRCS            += $(STM32SDK)/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c
 SRCS            += $(DAPLINK)/hic_hal/stm32/stm32f103xb/usb_config.c

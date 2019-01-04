@@ -59,6 +59,8 @@
 
 static DMA_HandleTypeDef hdma_tx;
 static DMA_HandleTypeDef hdma_tx2;
+static DMA_HandleTypeDef hdma_rx;
+static DMA_HandleTypeDef hdma_rx2;
 
 /**
   * @brief UART MSP Initialization 
@@ -118,29 +120,58 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
   
   /*##-4- Configure the DMA streams ##########################################*/
   /* Configure the DMA handler for Transmission process */
-  DMA_HandleTypeDef* tx = NULL;
-  if (huart->Instance == USARTx) {
-    tx = &hdma_tx;
-    tx->Instance                 = USARTx_TX_DMA_STREAM;
-  } else {
-    tx = &hdma_tx2;
-    tx->Instance                 = USARTx_TX_DMA_STREAM2;
+  {
+    DMA_HandleTypeDef* tx = NULL;
+    if (huart->Instance == USARTx) {
+      tx = &hdma_tx;
+      tx->Instance                 = USARTx_TX_DMA_STREAM;
+    } else {
+      tx = &hdma_tx2;
+      tx->Instance                 = USARTx_TX_DMA_STREAM2;
+    }
+    tx->Init.Direction           = DMA_MEMORY_TO_PERIPH;
+    tx->Init.PeriphInc           = DMA_PINC_DISABLE;
+    tx->Init.MemInc              = DMA_MINC_ENABLE;
+    tx->Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    tx->Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+    tx->Init.Mode                = DMA_NORMAL;
+    tx->Init.Priority            = DMA_PRIORITY_LOW;
+
+    HAL_DMA_Init(tx);
+
+    /* Associate the initialized DMA handle to the UART handle */
+    if (huart->Instance == USARTx) {
+      __HAL_LINKDMA(huart, hdmatx, hdma_tx);
+    } else {
+      __HAL_LINKDMA(huart, hdmatx, hdma_tx2);
+    }
   }
-  tx->Init.Direction           = DMA_MEMORY_TO_PERIPH;
-  tx->Init.PeriphInc           = DMA_PINC_DISABLE;
-  tx->Init.MemInc              = DMA_MINC_ENABLE;
-  tx->Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-  tx->Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
-  tx->Init.Mode                = DMA_NORMAL;
-  tx->Init.Priority            = DMA_PRIORITY_LOW;
-  
-  HAL_DMA_Init(tx);
-  
-  /* Associate the initialized DMA handle to the UART handle */
-  if (huart->Instance == USARTx) {
-    __HAL_LINKDMA(huart, hdmatx, hdma_tx);
-  } else {
-    __HAL_LINKDMA(huart, hdmatx, hdma_tx2);
+
+  {
+    DMA_HandleTypeDef* rx = NULL;
+    if (huart->Instance == USARTx) {
+      rx = &hdma_rx;
+      rx->Instance                 = USARTx_RX_DMA_STREAM;
+    } else {
+      rx = &hdma_rx2;
+      rx->Instance                 = USARTx_RX_DMA_STREAM2;
+    }
+    rx->Init.Direction           = DMA_PERIPH_TO_MEMORY;
+    rx->Init.PeriphInc           = DMA_PINC_DISABLE;
+    rx->Init.MemInc              = DMA_MINC_ENABLE;
+    rx->Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    rx->Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+    rx->Init.Mode                = DMA_CIRCULAR;
+    rx->Init.Priority            = DMA_PRIORITY_LOW;
+
+    HAL_DMA_Init(rx);
+
+    /* Associate the initialized DMA handle to the UART handle */
+    if (huart->Instance == USARTx) {
+      __HAL_LINKDMA(huart, hdmarx, hdma_rx);
+    } else {
+      __HAL_LINKDMA(huart, hdmarx, hdma_rx2);
+    }
   }
   
   /*##-5- Configure the NVIC for DMA #########################################*/   
@@ -190,7 +221,9 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
         HAL_GPIO_DeInit(USARTx_RX_GPIO_PORT, USARTx_RX_PIN);
 
         hdma_tx.Instance                 = USARTx_TX_DMA_STREAM;
+        hdma_rx.Instance                 = USARTx_RX_DMA_STREAM;
         HAL_DMA_DeInit(&hdma_tx);
+        HAL_DMA_DeInit(&hdma_rx);
     } else {
         HAL_NVIC_DisableIRQ(USARTx_IRQn2);
         HAL_NVIC_DisableIRQ(USARTx_DMA_TX_IRQn2);
@@ -202,7 +235,9 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
         HAL_GPIO_DeInit(USARTx_RX_GPIO_PORT, USARTx_RX_PIN2);
 
         hdma_tx2.Instance                 = USARTx_TX_DMA_STREAM2;
+        hdma_rx2.Instance                 = USARTx_RX_DMA_STREAM2;
         HAL_DMA_DeInit(&hdma_tx2);
+        HAL_DMA_DeInit(&hdma_rx2);
     }
   
     /*##-4- Reset TIM peripheral ###############################################*/

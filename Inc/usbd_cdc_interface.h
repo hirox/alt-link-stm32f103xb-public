@@ -8,7 +8,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright © 2016 STMicroelectronics International N.V. 
+  * <h2><center>&copy; Copyright ï¿½ 2016 STMicroelectronics International N.V. 
   * All rights reserved.</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -80,6 +80,7 @@
 
 /* Definition for USARTx's DMA: used for transmitting data over Tx pin */
 #define USARTx_TX_DMA_STREAM             DMA1_Channel4
+#define USARTx_RX_DMA_STREAM             DMA1_Channel5
 #define USARTx_DMA_TX_IRQHandler         DMA1_Channel4_IRQHandler
 #define USARTx_DMA_TX_IRQn               DMA1_Channel4_IRQn
 
@@ -101,9 +102,9 @@
 
 /* Definition for USARTx's DMA: used for transmitting data over Tx pin */
 #define USARTx_TX_DMA_STREAM2             DMA1_Channel7
+#define USARTx_RX_DMA_STREAM2             DMA1_Channel6
 #define USARTx_DMA_TX_IRQHandler2         DMA1_Channel7_IRQHandler
 #define USARTx_DMA_TX_IRQn2               DMA1_Channel7_IRQn
-
 
 /* Definition for TIMx clock resources */
 #define TIMx                             TIM2

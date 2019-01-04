@@ -86,12 +86,12 @@ void USBD_CDC_Init (USBD_HandleTypeDef *pdev,
 
     /* Init Xfer states */
     USBD_CDC_HandleTypeDef* hcdc = &cdcClassData[0];
-    hcdc->TxState =0;
-    hcdc->RxState =0;
+    hcdc->TxState = 1;
+    hcdc->RxState = 1;
 
     hcdc = &cdcClassData[1];
-    hcdc->TxState =0;
-    hcdc->RxState =0;
+    hcdc->TxState = 1;
+    hcdc->RxState = 1;
 
     /* Init  physical Interface components */
     USBD_CDC_fops.Init();
@@ -177,7 +177,7 @@ uint8_t  USBD_CDC_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
         hcdc = &cdcClassData[1];
     }
 
-    hcdc->TxState = 0;
+    hcdc->TxState = 1;
 
     return USBD_OK;
 }
@@ -201,7 +201,7 @@ uint8_t  USBD_CDC_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum)
   NAKed till the end of the application Xfer */
   USBD_CDC_fops.Receive(index, len);
 
-  hcdc->RxState = 0;
+  hcdc->RxState = 1;
 
   return USBD_OK;
 }
@@ -243,7 +243,7 @@ uint8_t  USBD_CDC_ReceivePacket(uint32_t index, uint8_t *pbuff, USBD_HandleTypeD
     /* Prepare Out endpoint to receive next packet */
     USBD_LL_PrepareReceive(pdev, epnum, pbuff, CDC_DATA_FS_OUT_PACKET_SIZE);
 
-    hcdc->RxState = 1;
+    hcdc->RxState = 2;
     return USBD_OK;
 }
 
@@ -257,9 +257,9 @@ uint8_t  USBD_CDC_TransmitPacket(uint32_t index, uint8_t *pbuff, uint16_t length
     USBD_CDC_HandleTypeDef   *hcdc = &cdcClassData[index];
     uint32_t epnum = (index == 0) ? CDC_IN_EP : CDC_IN_EP2;
 
-    if(hcdc->TxState == 0 || ((PCD_GET_ENDPOINT(hpcd.Instance, (epnum & 0x7F))) & USB_EP_CTR_TX) == 0) {
+    if(hcdc->TxState == 1 || ((PCD_GET_ENDPOINT(hpcd.Instance, (epnum & 0x7F))) & USB_EP_CTR_TX) == 0) {
       /* Tx Transfer in progress */
-      hcdc->TxState = 1;
+      hcdc->TxState = 2;
       
       /* Transmit next packet */
       USBD_LL_Transmit(pdev, epnum, pbuff, length);
@@ -275,7 +275,7 @@ uint8_t USBD_CDC_TxState(uint32_t index)
 {
     USBD_CDC_HandleTypeDef   *hcdc = &cdcClassData[index];
 
-    if (hcdc->TxState == 0) {
+    if (hcdc->TxState == 1) {
       return USBD_OK;
     }
     else
