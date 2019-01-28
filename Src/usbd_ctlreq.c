@@ -97,8 +97,6 @@ static void USBD_SetFeature(USBD_HandleTypeDef *pdev ,
 static void USBD_ClrFeature(USBD_HandleTypeDef *pdev , 
                             USBD_SetupReqTypedef *req);
 
-static uint8_t USBD_GetLen(uint8_t *buf);
-
 /**
   * @}
   */ 
@@ -174,12 +172,12 @@ USBD_StatusTypeDef  USBD_StdItfReq (USBD_HandleTypeDef *pdev , USBD_SetupReqType
   switch (pdev->dev_state) 
   {
   case USBD_STATE_CONFIGURED:
-    
-    if (LOBYTE(req->wIndex) <= USBD_MAX_NUM_INTERFACES) 
+    if ((req->bmRequest & USB_REQ_TYPE_MASK) == USB_REQ_TYPE_VENDOR
+      || LOBYTE(req->wIndex) <= USBD_MAX_NUM_INTERFACES) 
     {
-      pdev->pClass->Setup (pdev, req); 
-      
-      if((req->wLength == 0)&& (ret == USBD_OK))
+      pdev->pClass->Setup(pdev, req);
+
+      if((req->wLength == 0) && (ret == USBD_OK))
       {
          USBD_CtlSendStatus(pdev);
       }
@@ -213,11 +211,9 @@ USBD_StatusTypeDef  USBD_StdEPReq (USBD_HandleTypeDef *pdev , USBD_SetupReqTyped
   ep_addr  = LOBYTE(req->wIndex);   
   
   /* Check if it is a class request */
-  if ((req->bmRequest & 0x60) == 0x20)
+  if ((req->bmRequest & USB_REQ_TYPE_MASK) == USB_REQ_TYPE_CLASS)
   {
-    pdev->pClass->Setup (pdev, req);
-    
-    return USBD_OK;
+    return pdev->pClass->Setup(pdev, req);
   }
   
   switch (req->bRequest) 
@@ -243,7 +239,7 @@ USBD_StatusTypeDef  USBD_StdEPReq (USBD_HandleTypeDef *pdev , USBD_SetupReqTyped
           
         }
       }
-      pdev->pClass->Setup (pdev, req);   
+      pdev->pClass->Setup(pdev, req);
       USBD_CtlSendStatus(pdev);
       
       break;
@@ -271,7 +267,7 @@ USBD_StatusTypeDef  USBD_StdEPReq (USBD_HandleTypeDef *pdev , USBD_SetupReqTyped
         if ((ep_addr & 0x7F) != 0x00) 
         {        
           USBD_LL_ClearStallEP(pdev , ep_addr);
-          pdev->pClass->Setup (pdev, req);
+          pdev->pClass->Setup(pdev, req);
         }
         USBD_CtlSendStatus(pdev);
       }
@@ -629,7 +625,7 @@ static void USBD_SetFeature(USBD_HandleTypeDef *pdev ,
   if (req->wValue == USB_FEATURE_REMOTE_WAKEUP)
   {
     pdev->dev_remote_wakeup = 1;  
-    pdev->pClass->Setup (pdev, req);   
+    pdev->pClass->Setup(pdev, req);
     USBD_CtlSendStatus(pdev);
   }
 
@@ -653,7 +649,7 @@ static void USBD_ClrFeature(USBD_HandleTypeDef *pdev ,
     if (req->wValue == USB_FEATURE_REMOTE_WAKEUP) 
     {
       pdev->dev_remote_wakeup = 0; 
-      pdev->pClass->Setup (pdev, req);   
+      pdev->pClass->Setup(pdev, req);
       USBD_CtlSendStatus(pdev);
     }
     break;
@@ -693,8 +689,10 @@ void USBD_ParseSetupRequest(USBD_SetupReqTypedef *req, uint8_t *pdata)
 void USBD_CtlError( USBD_HandleTypeDef *pdev ,
                             USBD_SetupReqTypedef *req)
 {
-  USBD_LL_StallEP(pdev , 0x80);
-  USBD_LL_StallEP(pdev , 0);
+  (void)req;
+
+  USBD_LL_StallEP(pdev, 0x80);
+  USBD_LL_StallEP(pdev, 0);
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

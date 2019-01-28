@@ -10,7 +10,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright © 2016 STMicroelectronics International N.V. 
+  * <h2><center>&copy; Copyright ï¿½ 2016 STMicroelectronics International N.V. 
   * All rights reserved.</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -66,6 +66,8 @@ extern UART_HandleTypeDef UartHandle[2];
 
 /* TIM handler declared in "usbd_cdc_interface.c" file */
 extern TIM_HandleTypeDef TimHandle;
+
+extern I2C_HandleTypeDef i2c_handle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -230,5 +232,26 @@ void TIMx_IRQHandler(void)
   HAL_TIM_IRQHandler(&TimHandle);
 }
 
+/**
+  * @brief  This function handles I2C event interrupt request.
+  * @param  None
+  * @retval None
+  * @Note   This function is redefined in "main.h" and related to I2C data transmission
+  */
+void I2Cx_EV_IRQHandler(void)
+{
+  HAL_I2C_EV_IRQHandler(&i2c_handle);
+}
+
+/**
+  * @brief  This function handles I2C error interrupt request.
+  * @param  None
+  * @retval None
+  * @Note   This function is redefined in "main.h" and related to I2C error
+  */
+void I2Cx_ER_IRQHandler(void)
+{
+  HAL_I2C_ER_IRQHandler(&i2c_handle);
+}
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

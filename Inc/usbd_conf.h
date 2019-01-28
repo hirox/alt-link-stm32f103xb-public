@@ -8,7 +8,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright © 2016 STMicroelectronics International N.V. 
+  * <h2><center>&copy; Copyright ï¿½ 2016 STMicroelectronics International N.V. 
   * All rights reserved.</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -59,7 +59,7 @@
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Common Config */
-#define USBD_MAX_NUM_INTERFACES               4 /*USBD_HID_IF_NUM*/
+#define USBD_MAX_NUM_INTERFACES               5 /*USBD_HID_IF_NUM*/
 #define USBD_MAX_NUM_CONFIGURATION            1
 #define USBD_MAX_STR_DESC_SIZ                 0x100
 #define USBD_SUPPORT_USER_STRING              0
@@ -67,9 +67,6 @@
 #define USBD_DEBUG_LEVEL                      0
 
 #define USBD_CUSTOMHID_OUTREPORT_BUF_SIZE     0x40
-//#define USBD_CUSTOM_HID_REPORT_DESC_SIZE       163
-//extern const uint16_t USBD_HID_ReportDescriptorSize;
-//#define USBD_CUSTOM_HID_REPORT_DESC_SIZE       USBD_HID_ReportDescriptorSize
 
 /* Exported macro ------------------------------------------------------------*/
 /* Memory management macros */

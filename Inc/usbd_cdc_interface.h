@@ -120,6 +120,27 @@
    The period depends on CDC_POLLING_INTERVAL */
 #define CDC_POLLING_INTERVAL             1 /* in ms. The max is 65 and the min is 1 */
 
+/* Definition for I2Cx clock resources */
+#define I2Cx                            I2C1
+#define I2Cx_CLK_ENABLE()               __HAL_RCC_I2C1_CLK_ENABLE()
+#define I2Cx_SDA_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOB_CLK_ENABLE()
+#define I2Cx_SCL_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOB_CLK_ENABLE()
+
+#define I2Cx_FORCE_RESET()              __HAL_RCC_I2C1_FORCE_RESET()
+#define I2Cx_RELEASE_RESET()            __HAL_RCC_I2C1_RELEASE_RESET()
+
+/* Definition for I2Cx Pins */
+#define I2Cx_SCL_PIN                    GPIO_PIN_6
+#define I2Cx_SCL_GPIO_PORT              GPIOB
+#define I2Cx_SDA_PIN                    GPIO_PIN_7
+#define I2Cx_SDA_GPIO_PORT              GPIOB
+
+/* Definition for I2Cx's NVIC */
+#define I2Cx_EV_IRQn                    I2C1_EV_IRQn
+#define I2Cx_ER_IRQn                    I2C1_ER_IRQn
+#define I2Cx_EV_IRQHandler              I2C1_EV_IRQHandler
+#define I2Cx_ER_IRQHandler              I2C1_ER_IRQHandler
+
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 #endif /* __USBD_CDC_IF_H */

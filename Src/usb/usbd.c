@@ -9,9 +9,6 @@
 #include "usbd_cdc.h"
 #include "usbd_cdc_io.h"
 
-extern const uint16_t USBD_HID_DescriptorOffset;
-extern const uint16_t USBD_HID_ReportDescriptorSize;
-
 extern USBD_CUSTOM_HID_ItfTypeDef USBD_CustomHID_fops;
 extern USBD_CDC_ItfTypeDef USBD_CDC_fops;
 
@@ -41,6 +38,9 @@ uint8_t USBD_HID_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
 uint8_t USBD_HID_EP0_RxReady(USBD_HandleTypeDef *pdev);
 uint8_t USBD_HID_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum);
 uint8_t USBD_HID_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum);
+
+uint8_t I2C_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
+uint8_t I2C_EP0_RxReady(USBD_HandleTypeDef *pdev);
 
 static uint8_t USBD_Class_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 {
@@ -89,12 +89,19 @@ static uint8_t  USBD_Class_DeInit (USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 }
 
 extern const uint8_t usbd_hid_if_num;
-static uint8_t  USBD_Setup (USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
+static uint8_t USBD_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
-    if (LOBYTE(req->wIndex) == usbd_hid_if_num) {
-        return USBD_HID_Setup(pdev, req);
-    } else {
-        return USBD_CDC_Setup(pdev, req);
+    if ((req->bmRequest & USB_REQ_TYPE_MASK) == USB_REQ_TYPE_VENDOR)
+    {
+      return I2C_Setup(pdev, req);
+    }
+    else
+    {
+        if (LOBYTE(req->wIndex) == usbd_hid_if_num) {
+            return USBD_HID_Setup(pdev, req);
+        } else {
+            return USBD_CDC_Setup(pdev, req);
+        }
     }
 }
 
@@ -133,9 +140,18 @@ uint8_t USBD_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum)
 
 uint8_t USBD_EP0_RxReady(USBD_HandleTypeDef *pdev)
 {
-    USBD_HID_EP0_RxReady(pdev);
-    USBD_CDC_EP0_RxReady(pdev);
-    return USBD_OK;
+    if ((pdev->request.bmRequest & USB_REQ_TYPE_MASK) == USB_REQ_TYPE_VENDOR)
+    {
+      return I2C_EP0_RxReady(pdev);
+    }
+    else
+    {
+        if (LOBYTE(pdev->request.wIndex) == usbd_hid_if_num) {
+            return USBD_HID_EP0_RxReady(pdev);
+        } else {
+            return USBD_CDC_EP0_RxReady(pdev);
+        }
+    }
 }
 
 /**

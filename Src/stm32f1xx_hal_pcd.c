@@ -74,6 +74,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
+#include "usbd_core.h"
 
 /** @addtogroup STM32F1xx_HAL_Driver
   * @{
@@ -644,14 +645,9 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
   * @param  epnum: endpoint number
   * @retval None
   */
- __weak void HAL_PCD_DataOutStageCallback(PCD_HandleTypeDef *hpcd, uint8_t epnum)
+void HAL_PCD_DataOutStageCallback(PCD_HandleTypeDef *hpcd, uint8_t epnum)
 {
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(hpcd);
-  UNUSED(epnum);
-  /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_PCD_DataOutStageCallback could be implemented in the user file
-   */
+  USBD_LL_DataOutStage((USBD_HandleTypeDef*)hpcd->pData, epnum, hpcd->OUT_ep[epnum].xfer_buff);
 }
 
 /**
@@ -660,27 +656,18 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
   * @param  epnum: endpoint number
   * @retval None
   */
- __weak void HAL_PCD_DataInStageCallback(PCD_HandleTypeDef *hpcd, uint8_t epnum)
+void HAL_PCD_DataInStageCallback(PCD_HandleTypeDef *hpcd, uint8_t epnum)
 {
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(hpcd);
-  UNUSED(epnum);
-  /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_PCD_DataInStageCallback could be implemented in the user file
-   */
+  USBD_LL_DataInStage((USBD_HandleTypeDef*)hpcd->pData, epnum, hpcd->IN_ep[epnum].xfer_buff);
 }
 /**
   * @brief  Setup stage callback
   * @param  hpcd: PCD handle
   * @retval None
   */
- __weak void HAL_PCD_SetupStageCallback(PCD_HandleTypeDef *hpcd)
+void HAL_PCD_SetupStageCallback(PCD_HandleTypeDef *hpcd)
 {
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(hpcd);
-  /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_PCD_SetupStageCallback could be implemented in the user file
-   */
+  USBD_LL_SetupStage((USBD_HandleTypeDef*)hpcd->pData, (uint8_t *)hpcd->Setup);
 }
 
 /**
@@ -688,13 +675,9 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
   * @param  hpcd: PCD handle
   * @retval None
   */
- __weak void HAL_PCD_SOFCallback(PCD_HandleTypeDef *hpcd)
+void HAL_PCD_SOFCallback(PCD_HandleTypeDef *hpcd)
 {
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(hpcd);
-  /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_PCD_SOFCallback could be implemented in the user file
-   */
+  USBD_LL_SOF((USBD_HandleTypeDef*)hpcd->pData);
 }
 
 /**
@@ -702,13 +685,11 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
   * @param  hpcd: PCD handle
   * @retval None
   */
- __weak void HAL_PCD_ResetCallback(PCD_HandleTypeDef *hpcd)
+void HAL_PCD_ResetCallback(PCD_HandleTypeDef *hpcd)
 {
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(hpcd);
-  /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_PCD_ResetCallback could be implemented in the user file
-   */
+  USBD_LL_SetSpeed((USBD_HandleTypeDef*)hpcd->pData, USBD_SPEED_FULL);
+  /* Reset Device */
+  USBD_LL_Reset((USBD_HandleTypeDef*)hpcd->pData);
 }
 
 /**

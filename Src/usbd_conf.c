@@ -8,7 +8,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright © 2016 STMicroelectronics International N.V. 
+  * <h2><center>&copy; Copyright ï¿½ 2016 STMicroelectronics International N.V. 
   * All rights reserved.</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -119,60 +119,6 @@ void HAL_PCD_MspDeInit(PCD_HandleTypeDef *hpcd)
 *******************************************************************************/
 
 /**
-  * @brief  SetupStage callback.
-  * @param  hpcd: PCD handle
-  * @retval None
-  */
-void HAL_PCD_SetupStageCallback(PCD_HandleTypeDef *hpcd)
-{
-  USBD_LL_SetupStage((USBD_HandleTypeDef*)hpcd->pData, (uint8_t *)hpcd->Setup);
-}
-
-/**
-  * @brief  DataOut Stage callback.
-  * @param  hpcd: PCD handle
-  * @param  epnum: Endpoint Number
-  * @retval None
-  */
-void HAL_PCD_DataOutStageCallback(PCD_HandleTypeDef *hpcd, uint8_t epnum)
-{
-  USBD_LL_DataOutStage((USBD_HandleTypeDef*)hpcd->pData, epnum, hpcd->OUT_ep[epnum].xfer_buff);
-}
-
-/**
-  * @brief  DataIn Stage callback.
-  * @param  hpcd: PCD handle
-  * @param  epnum: Endpoint Number
-  * @retval None
-  */
-void HAL_PCD_DataInStageCallback(PCD_HandleTypeDef *hpcd, uint8_t epnum)
-{
-  USBD_LL_DataInStage((USBD_HandleTypeDef*)hpcd->pData, epnum, hpcd->IN_ep[epnum].xfer_buff);
-}
-
-/**
-  * @brief  SOF callback.
-  * @param  hpcd: PCD handle
-  * @retval None
-  */
-void HAL_PCD_SOFCallback(PCD_HandleTypeDef *hpcd)
-{
-  USBD_LL_SOF((USBD_HandleTypeDef*)hpcd->pData);
-}
-
-/**
-  * @brief  Reset callback.
-  * @param  hpcd: PCD handle
-  * @retval None
-  */
-void HAL_PCD_ResetCallback(PCD_HandleTypeDef *hpcd)
-{
-  USBD_LL_SetSpeed((USBD_HandleTypeDef*)hpcd->pData, USBD_SPEED_FULL);
-  /* Reset Device */
-  USBD_LL_Reset((USBD_HandleTypeDef*)hpcd->pData);
-}
-
-/**
   * @brief  Suspend callback.
   * @param  hpcd: PCD handle
   * @retval None
@@ -242,7 +188,7 @@ void HAL_PCD_DisconnectCallback(PCD_HandleTypeDef *hpcd)
 // PCD: Peripheral Controller Driver
 // MSP: MCU Support Package
 
-// 6 eps * 4 bytse (ADDR/COUNT) * 2 entries (TX/RX) => 48bytes (512-48=464, 464-64*6=80, 80-8*2=64)
+// 6 eps * 4 bytes (ADDR/COUNT) * 2 entries (TX/RX) => 48bytes (512-48=464, 464-64*6=80, 80-8*2=64)
 #define PMA_ADDR_BASE (6 * 4 * 2)
 
 /**
@@ -292,6 +238,13 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   HAL_PCDEx_PMAConfig(pdev->pData , CDC_IN_EP2 , PCD_SNG_BUF, offset);
   HAL_PCDEx_PMAConfig(pdev->pData , CDC_OUT_EP2 , PCD_SNG_BUF, offset + 0x40 * 1);
   HAL_PCDEx_PMAConfig(pdev->pData , CDC_CMD_EP2 , PCD_SNG_BUF, offset + 0x40 * 2);
+
+  // 6(EPs)*2(IN/OUT)*4(bytes,ADDR+COUNT)=48
+  // 48 + 64 * 6 + 16 = 448, empty: 64
+
+  // + 1 CDC?
+  // 16 bytes entry 2(EPs)*2(IN/OUT)*4(bytes,ADDR+COUNT)=16
+  // 8: CMD, 16 * 2: IN/OUT, 8: empty? 
 
   return USBD_OK;
 }

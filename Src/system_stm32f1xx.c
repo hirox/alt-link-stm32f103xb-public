@@ -2,8 +2,8 @@
   ******************************************************************************
   * @file    system_stm32f1xx.c
   * @author  MCD Application Team
-  * @version V1.4.0
-  * @date    29-April-2016
+  * @version V1.5.0
+  * @date    14-April-2017
   * @brief   CMSIS Cortex-M3 Device Peripheral Access Layer System Source File.
   * 
   * 1.  This file provides two functions and one global variable to be called from 
@@ -388,14 +388,23 @@ void SystemCoreClockUpdate (void)
   */ 
 void SystemInit_ExtMemCtl(void) 
 {
-/*!< FSMC Bank1 NOR/SRAM3 is used for the STM3210E-EVAL, if another Bank is 
-  required, then adjust the Register Addresses */
+  __IO uint32_t tmpreg;
+  /*!< FSMC Bank1 NOR/SRAM3 is used for the STM3210E-EVAL, if another Bank is 
+    required, then adjust the Register Addresses */
 
   /* Enable FSMC clock */
   RCC->AHBENR = 0x00000114;
+
+  /* Delay after an RCC peripheral clock enabling */
+  tmpreg = READ_BIT(RCC->AHBENR, RCC_AHBENR_FSMCEN);
   
-  /* Enable GPIOD, GPIOE, GPIOF and GPIOG clocks */  
+  /* Enable GPIOD, GPIOE, GPIOF and GPIOG clocks */
   RCC->APB2ENR = 0x000001E0;
+  
+  /* Delay after an RCC peripheral clock enabling */
+  tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPDEN);
+
+  (void)(tmpreg);
   
 /* ---------------  SRAM Data lines, NOE and NWE configuration ---------------*/
 /*----------------  SRAM Address lines configuration -------------------------*/
@@ -418,8 +427,8 @@ void SystemInit_ExtMemCtl(void)
 /*----------------  FSMC Configuration ---------------------------------------*/  
 /*----------------  Enable FSMC Bank1_SRAM Bank ------------------------------*/
   
-  FSMC_Bank1->BTCR[4] = 0x00001011;
-  FSMC_Bank1->BTCR[5] = 0x00000200;
+  FSMC_Bank1->BTCR[4] = 0x00001091;
+  FSMC_Bank1->BTCR[5] = 0x00110212;
 }
 #endif /* DATA_IN_ExtSRAM */
 #endif /* STM32F100xE || STM32F101xE || STM32F101xG || STM32F103xE || STM32F103xG */

@@ -146,8 +146,8 @@ uint8_t USBD_HID_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 //        pbuf = USBD_CUSTOM_HID_Desc;   
 //        len = MIN(USB_CUSTOM_HID_DESC_SIZ , req->wLength);
 
-        pbuf = USBD_CustomHID_fops.pReport + USBD_HID_DescriptorOffset;
-        len = MIN(USB_CUSTOM_HID_DESC_SIZ , req->wLength);
+        pbuf = USBD_CustomHID_fops.pReport;// + USBD_HID_DescriptorOffset;
+        len = MIN(USBD_HID_ReportDescriptorSize , req->wLength);
       }
       
       USBD_CtlSendData (pdev, 

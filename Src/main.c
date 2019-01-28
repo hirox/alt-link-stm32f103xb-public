@@ -8,7 +8,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright © 2016 STMicroelectronics International N.V. 
+  * <h2><center>&copy; Copyright ï¿½ 2016 STMicroelectronics International N.V. 
   * All rights reserved.</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -52,6 +52,8 @@
 #include "usbd_hid.h"
 
 extern const USBD_ClassTypeDef USBD_HANDLER;
+
+void I2C_Run_In_Thread_Mode();
 
 /** @addtogroup STM32F1xx_HAL_Validation
   * @{
@@ -100,6 +102,7 @@ int main(void)
     {
         HID_Run_In_Thread_Mode();
         CDC_Run_In_Thread_Mode();
+        I2C_Run_In_Thread_Mode();
     }
 }
 
