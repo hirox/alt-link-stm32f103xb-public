@@ -328,7 +328,7 @@ static void USBD_GetDescriptor(USBD_HandleTypeDef *pdev ,
                                USBD_SetupReqTypedef *req)
 {
   uint16_t len;
-  uint8_t *pbuf;
+  const uint8_t *pbuf;
   
     
   switch (req->wValue >> 8)
@@ -345,13 +345,11 @@ static void USBD_GetDescriptor(USBD_HandleTypeDef *pdev ,
   case USB_DESC_TYPE_CONFIGURATION:     
     if(pdev->dev_speed == USBD_SPEED_HIGH )   
     {
-      pbuf   = (uint8_t *)pdev->pClass->GetHSConfigDescriptor(&len);
-      pbuf[1] = USB_DESC_TYPE_CONFIGURATION;
+      pbuf = pdev->pClass->GetHSConfigDescriptor(&len);
     }
     else
     {
-      pbuf   = (uint8_t *)pdev->pClass->GetFSConfigDescriptor(&len);
-      pbuf[1] = USB_DESC_TYPE_CONFIGURATION;
+      pbuf = pdev->pClass->GetFSConfigDescriptor(&len);
     }
     break;
     
@@ -383,17 +381,8 @@ static void USBD_GetDescriptor(USBD_HandleTypeDef *pdev ,
     } 
 
   case USB_DESC_TYPE_OTHER_SPEED_CONFIGURATION:
-    if(pdev->dev_speed == USBD_SPEED_HIGH  )   
-    {
-      pbuf   = (uint8_t *)pdev->pClass->GetOtherSpeedConfigDescriptor(&len);
-      pbuf[1] = USB_DESC_TYPE_OTHER_SPEED_CONFIGURATION;
-      break; 
-    }
-    else
-    {
-      USBD_CtlError(pdev , req);
-      return;
-    }
+    USBD_CtlError(pdev , req);
+    return;
 
   default: 
      USBD_CtlError(pdev , req);
@@ -589,14 +578,14 @@ static void USBD_GetStatus(USBD_HandleTypeDef *pdev ,
   case USBD_STATE_CONFIGURED:
     
 #if ( USBD_SELF_POWERED == 1)
-    pdev->dev_config_status = USB_CONFIG_SELF_POWERED;                                  
+    pdev->dev_config_status = USB_STATUS_SELF_POWERED; 
 #else
     pdev->dev_config_status = 0;                                   
 #endif
                       
     if (pdev->dev_remote_wakeup) 
     {
-       pdev->dev_config_status |= USB_CONFIG_REMOTE_WAKEUP;                                
+       pdev->dev_config_status |= USB_STATUS_REMOTE_WAKEUP;
     }
     
     USBD_CtlSendData (pdev, 

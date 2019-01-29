@@ -104,7 +104,6 @@ extern const BOOL __rtx;
  *----------------------------------------------------------------------------*/
 extern const U8 USBD_HID_ReportDescriptor[];
 extern const U16 USBD_HID_ReportDescriptorSize;
-extern const U16 USBD_HID_DescriptorOffset;
 extern const U8 USBD_DeviceDescriptor[];
 extern const U8 USBD_DeviceQualifier[];
 extern const U8 USBD_DeviceQualifier_HS[];

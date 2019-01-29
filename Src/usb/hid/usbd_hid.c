@@ -52,6 +52,7 @@
 
 extern const uint16_t USBD_HID_DescriptorOffset;
 extern const uint16_t USBD_HID_ReportDescriptorSize;
+extern uint8_t USBD_ConfigDescriptor[];
 
 extern USBD_CUSTOM_HID_ItfTypeDef USBD_CustomHID_fops;
 
@@ -93,7 +94,7 @@ void USBD_HID_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 uint8_t USBD_HID_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
   uint16_t len = 0;
-  uint8_t  *pbuf = NULL;
+  const uint8_t *pbuf = NULL;
   USBD_CUSTOM_HID_HandleTypeDef     *hhid = &hidClassData;
 
   switch (req->bmRequest & USB_REQ_TYPE_MASK)
@@ -101,31 +102,27 @@ uint8_t USBD_HID_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
   case USB_REQ_TYPE_CLASS :  
     switch (req->bRequest)
     {
-    case CUSTOM_HID_REQ_SET_PROTOCOL:
+    case HID_REQ_SET_PROTOCOL:
       hhid->Protocol = (uint8_t)(req->wValue);
       break;
       
-    case CUSTOM_HID_REQ_GET_PROTOCOL:
-      USBD_CtlSendData (pdev, 
-                        (uint8_t *)&hhid->Protocol,
-                        1);    
+    case HID_REQ_GET_PROTOCOL:
+      USBD_CtlSendData(pdev, (uint8_t *)&hhid->Protocol, 1);
       break;
       
-    case CUSTOM_HID_REQ_SET_IDLE:
+    case HID_REQ_SET_IDLE:
       hhid->IdleState = (uint8_t)(req->wValue >> 8);
       break;
       
-    case CUSTOM_HID_REQ_GET_IDLE:
-      USBD_CtlSendData (pdev, 
-                        (uint8_t *)&hhid->IdleState,
-                        1);        
+    case HID_REQ_GET_IDLE:
+      USBD_CtlSendData(pdev, (uint8_t *)&hhid->IdleState, 1);
       break;      
     
-    case CUSTOM_HID_REQ_SET_REPORT:
+    case HID_REQ_SET_REPORT:
       hhid->IsReportAvailable = 1;
-      USBD_CtlPrepareRx (pdev, hhid->Report_buf, (uint8_t)(req->wLength));
-      
+      USBD_CtlPrepareRx(pdev, hhid->Report_buf, (uint8_t)(req->wLength));
       break;
+
     default:
       USBD_CtlError (pdev, req);
       return USBD_FAIL; 
@@ -136,18 +133,15 @@ uint8_t USBD_HID_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
     switch (req->bRequest)
     {
     case USB_REQ_GET_DESCRIPTOR: 
-      if( req->wValue >> 8 == CUSTOM_HID_REPORT_DESC)
+      if( req->wValue >> 8 == HID_REPORT_DESC)
       {
         len = MIN(USBD_HID_ReportDescriptorSize , req->wLength);
         pbuf =  USBD_CustomHID_fops.pReport;
       }
-      else if( req->wValue >> 8 == CUSTOM_HID_DESCRIPTOR_TYPE)
+      else if( req->wValue >> 8 == HID_DESCRIPTOR_TYPE)
       {
-//        pbuf = USBD_CUSTOM_HID_Desc;   
-//        len = MIN(USB_CUSTOM_HID_DESC_SIZ , req->wLength);
-
-        pbuf = USBD_CustomHID_fops.pReport;// + USBD_HID_DescriptorOffset;
-        len = MIN(USBD_HID_ReportDescriptorSize , req->wLength);
+        pbuf = USBD_ConfigDescriptor + USBD_HID_DescriptorOffset;
+        len = MIN(USB_HID_DESC_SIZE, req->wLength);
       }
       
       USBD_CtlSendData (pdev, 

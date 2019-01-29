@@ -20,7 +20,6 @@
  */
 
 #include "RTL.h"
-#include "rl_usb.h"
 #include "usb.h"
 
 #pragma thumb
@@ -102,8 +101,7 @@ const U8 usbd_cdc_acm_dif_num = USBD_CDC_ACM_DIF_NUM;
                                            USB_INTERFACE_DESC_SIZE + USB_ENDPOINT_DESC_SIZE + USB_ENDPOINT_DESC_SIZE)
 #define USBD_HID_DESC_LEN                 (USB_INTERFACE_DESC_SIZE + USB_HID_DESC_SIZE                                                          + \
                                           (USB_ENDPOINT_DESC_SIZE*(1+(USBD_HID_EP_INTOUT != 0))))
-#define USBD_HID_DESC_OFS                 (USB_CONFIGUARTION_DESC_SIZE + USB_INTERFACE_DESC_SIZE                                                + \
-                                           USBD_MSC_ENABLE * USBD_MSC_DESC_LEN + USBD_CDC_ACM_ENABLE * USBD_CDC_ACM_DESC_LEN + CDC_ENDPOINT2 * USBD_CDC_ACM_DESC_LEN)
+#define USBD_HID_DESC_OFS                 (USB_CONFIGUARTION_DESC_SIZE)
 
 #define USBD_I2C_DESC_LEN                 (USB_INTERFACE_DESC_SIZE)
 
@@ -605,7 +603,7 @@ const U8 USBD_DeviceQualifier_HS[] = { 0 };
 /* USB Device Configuration Descriptor (for Full Speed) */
 /*   All Descriptors (Configuration, Interface, Endpoint, Class, Vendor) */
 __weak \
-/*const*/ U8 USBD_ConfigDescriptor[] = {
+const U8 USBD_ConfigDescriptor[] = {
     /* Configuration 1 */
     USB_CONFIGUARTION_DESC_SIZE,          /* bLength */
     USB_CONFIGURATION_DESCRIPTOR_TYPE,    /* bDescriptorType */
@@ -616,6 +614,15 @@ __weak \
     USBD_CFGDESC_BMATTRIBUTES |           /* bmAttributes */
     (USBD_POWER << 6),
     USBD_CFGDESC_BMAXPOWER,               /* bMaxPower, device power consumption */
+
+#if (USBD_HID_ENABLE)
+    HID_DESC
+#if (USBD_HID_EP_INTOUT != 0)
+    HID_EP_INOUT
+#else
+    HID_EP
+#endif
+#endif
 
 #if (USBD_ADC_ENABLE)
 #if (USBD_MULTI_IF)
@@ -628,15 +635,6 @@ __weak \
 #if (USBD_MSC_ENABLE)
     MSC_DESC
     MSC_EP
-#endif
-
-#if (USBD_HID_ENABLE)
-    HID_DESC
-#if (USBD_HID_EP_INTOUT != 0)
-    HID_EP_INOUT
-#else
-    HID_EP
-#endif
 #endif
 
 #if (USBD_CDC_ACM_ENABLE)

@@ -94,8 +94,8 @@
 #define  USB_DESC_TYPE_OTHER_SPEED_CONFIGURATION           7
 #define  USB_DESC_TYPE_BOS                                 0x0F
 
-#define USB_CONFIG_REMOTE_WAKEUP                           2
-#define USB_CONFIG_SELF_POWERED                            1
+#define USB_STATUS_REMOTE_WAKEUP                           2
+#define USB_STATUS_SELF_POWERED                            1
 
 #define USB_FEATURE_EP_HALT                                0
 #define USB_FEATURE_REMOTE_WAKEUP                          1
@@ -165,9 +165,9 @@ typedef struct _Device_cb
   uint8_t  (*IsoINIncomplete)  (struct _USBD_HandleTypeDef *pdev , uint8_t epnum); 
   uint8_t  (*IsoOUTIncomplete) (struct _USBD_HandleTypeDef *pdev , uint8_t epnum);   
 
-  uint8_t  *(*GetHSConfigDescriptor)(uint16_t *length); 
-  uint8_t  *(*GetFSConfigDescriptor)(uint16_t *length);   
-  uint8_t  *(*GetOtherSpeedConfigDescriptor)(uint16_t *length);
+  const uint8_t  *(*GetHSConfigDescriptor)(uint16_t *length);
+  const uint8_t  *(*GetFSConfigDescriptor)(uint16_t *length);
+  const uint8_t  *(*GetOtherSpeedConfigDescriptor)(uint16_t *length);
   const uint8_t  *(*GetDeviceQualifierDescriptor)(uint16_t *length);
 #if (USBD_SUPPORT_USER_STRING == 1)
   uint8_t  *(*GetUsrStrDescriptor)(struct _USBD_HandleTypeDef *pdev ,uint8_t index,  uint16_t *length);   

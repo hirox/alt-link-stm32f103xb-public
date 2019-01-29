@@ -93,7 +93,7 @@
 * @retval status
 */
 USBD_StatusTypeDef  USBD_CtlSendData (USBD_HandleTypeDef  *pdev, 
-                               uint8_t *pbuf,
+                               const uint8_t *pbuf,
                                uint16_t len)
 {
   /* Set EP0 State */

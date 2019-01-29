@@ -36,48 +36,28 @@
 /* Includes ------------------------------------------------------------------*/
 #include  "usbd_ioreq.h"
 
-/** @addtogroup STM32_USB_DEVICE_LIBRARY
-  * @{
-  */
-  
-/** @defgroup USBD_CUSTOM_HID
-  * @brief This file is the Header file for USBD_customhid.c
-  * @{
-  */ 
-
-
-/** @defgroup USBD_CUSTOM_HID_Exported_Defines
-  * @{
-  */ 
 #define CUSTOM_HID_EPIN_ADDR                 0x81
 #define CUSTOM_HID_EPIN_SIZE                 0x40
 
 #define CUSTOM_HID_EPOUT_ADDR                0x01
 #define CUSTOM_HID_EPOUT_SIZE                0x40
 
-#define USB_CUSTOM_HID_CONFIG_DESC_SIZ       41
-#define USB_CUSTOM_HID_DESC_SIZ              9
+#define USB_HID_DESC_SIZE             9
 
-#define CUSTOM_HID_DESCRIPTOR_TYPE           0x21
-#define CUSTOM_HID_REPORT_DESC               0x22
-
-
-#define CUSTOM_HID_REQ_SET_PROTOCOL          0x0B
-#define CUSTOM_HID_REQ_GET_PROTOCOL          0x03
-
-#define CUSTOM_HID_REQ_SET_IDLE              0x0A
-#define CUSTOM_HID_REQ_GET_IDLE              0x02
-
-#define CUSTOM_HID_REQ_SET_REPORT            0x09
-#define CUSTOM_HID_REQ_GET_REPORT            0x01
-/**
-  * @}
-  */ 
+#define HID_DESCRIPTOR_TYPE           0x21
+#define HID_REPORT_DESC               0x22
 
 
-/** @defgroup USBD_CORE_Exported_TypesDefinitions
-  * @{
-  */
+#define HID_REQ_SET_PROTOCOL          0x0B
+#define HID_REQ_GET_PROTOCOL          0x03
+
+#define HID_REQ_SET_IDLE              0x0A
+#define HID_REQ_GET_IDLE              0x02
+
+#define HID_REQ_SET_REPORT            0x09
+#define HID_REQ_GET_REPORT            0x01
+
+
 typedef enum
 {
   CUSTOM_HID_IDLE = 0,
@@ -87,7 +67,7 @@ CUSTOM_HID_StateTypeDef;
 
 typedef struct _USBD_CUSTOM_HID_Itf
 {
-  uint8_t                  *pReport;
+  const uint8_t            *pReport;
   int8_t (* Init)          (void);
   int8_t (* DeInit)        (void);
   int8_t (* OutEvent)      (uint8_t*);   
@@ -104,31 +84,8 @@ typedef struct
   CUSTOM_HID_StateTypeDef     state;  
 }
 USBD_CUSTOM_HID_HandleTypeDef; 
-/**
-  * @}
-  */ 
 
 
-
-/** @defgroup USBD_CORE_Exported_Macros
-  * @{
-  */ 
-
-/**
-  * @}
-  */ 
-
-/** @defgroup USBD_CORE_Exported_Variables
-  * @{
-  */ 
-
-/**
-  * @}
-  */ 
-
-/** @defgroup USB_CORE_Exported_Functions
-  * @{
-  */ 
 uint8_t USBD_CUSTOM_HID_SendReport (USBD_HandleTypeDef *pdev, 
                                  uint8_t *report,
                                  uint16_t len);
@@ -140,21 +97,11 @@ uint8_t  USBD_CUSTOM_HID_RegisterInterface  (USBD_HandleTypeDef   *pdev,
 
 void HID_Run_In_Thread_Mode();
 
-/**
-  * @}
-  */ 
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif  /* __USB_CUSTOMHID_H */
-/**
-  * @}
-  */ 
-
-/**
-  * @}
-  */ 
   
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

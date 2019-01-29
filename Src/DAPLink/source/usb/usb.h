@@ -39,6 +39,5 @@
 #include "usbd_cdc_acm.h"
 #include "usbd_hid.h"
 #include "usbd_msc.h"
-#include "usbd_hw.h"
 
 #endif  /* __USB_H__ */
