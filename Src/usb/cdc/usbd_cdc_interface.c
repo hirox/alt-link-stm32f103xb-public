@@ -411,7 +411,7 @@ __NOINLINE void CDC_Run_In_Thread_Mode()
 
         uint32_t ptrIn = TX_BUF_PTR_IN(i);
         if (CDC.d[i].UserTxBufPtrOut != ptrIn &&
-            (force || (ptrIn - CDC.d[i].UserTxBufPtrOut) >= 0x40 ||
+            (force || (ptrIn - CDC.d[i].UserTxBufPtrOut) >= CDC_DATA_FS_IN_PACKET_SIZE ||
             ptrIn < CDC.d[i].UserTxBufPtrOut)) {
             uint32_t buffsize;
             uint8_t ret;
@@ -423,8 +423,8 @@ __NOINLINE void CDC_Run_In_Thread_Mode()
 
                 // If transfer is not caused by periodical timer,
                 // align the number of buffsize to be a multiple of 64 for efficiency
-                if (!force || buffsize >= 0x40)
-                    buffsize &= 0xFFFFFFC0;
+                if (!force || buffsize >= CDC_DATA_FS_IN_PACKET_SIZE)
+                    buffsize &= (0xFFFFFFFF - CDC_DATA_FS_IN_PACKET_SIZE + 1);
             }
 
             HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);

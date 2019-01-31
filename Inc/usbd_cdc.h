@@ -47,8 +47,8 @@
 
 /* CDC Endpoints parameters: you can fine tune these values depending on the needed baudrates and performance. */
 #define CDC_DATA_HS_MAX_PACKET_SIZE                 512  /* Endpoint IN & OUT Packet size */
-#define CDC_DATA_FS_MAX_PACKET_SIZE                 64  /* Endpoint IN & OUT Packet size */
-#define CDC_CMD_PACKET_SIZE                         8  /* Control Endpoint Packet size */ 
+#define CDC_DATA_FS_MAX_PACKET_SIZE                 64   /* Endpoint IN & OUT Packet size */
+#define CDC_CMD_PACKET_SIZE                         0    /* Control Endpoint Packet size */
 
 #define USB_CDC_CONFIG_DESC_SIZ                     67
 #define CDC_DATA_HS_IN_PACKET_SIZE                  CDC_DATA_HS_MAX_PACKET_SIZE
@@ -73,9 +73,5 @@
 #ifdef __cplusplus
 }
 #endif
-
-/**
-  * @}
-  */ 
   
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

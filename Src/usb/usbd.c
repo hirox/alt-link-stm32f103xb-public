@@ -114,10 +114,10 @@ static uint8_t USBD_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
   */
 extern const uint8_t USBD_ConfigDescriptor[];
 extern const uint16_t USBD_ConfigDescriptorSize;
-static uint8_t  *USBD_GetCfgDesc (uint16_t *length)
+static const uint8_t *USBD_GetCfgDesc (uint16_t *length)
 {
   *length = USBD_ConfigDescriptorSize;
-  return (uint8_t*)USBD_ConfigDescriptor;
+  return USBD_ConfigDescriptor;
 }
 
 uint8_t USBD_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)

@@ -188,8 +188,15 @@ void HAL_PCD_DisconnectCallback(PCD_HandleTypeDef *hpcd)
 // PCD: Peripheral Controller Driver
 // MSP: MCU Support Package
 
-// 6 eps * 4 bytes (ADDR/COUNT) * 2 entries (TX/RX) => 48bytes (512-48=464, 464-64*6=80, 80-8*2=64)
-#define PMA_ADDR_BASE (6 * 4 * 2)
+// 6 eps * 4 bytes (ADDR/COUNT) * 2 entries (TX/RX) => 48bytes (512-48=464, 464-64*6=80, 80-4*2=72)
+#define NUMBER_OF_EPS      6
+#define PMA_DATA_ADDR_BASE (NUMBER_OF_EPS * 4 * 2)
+#define EP0_PACKET_SIZE    0x20
+
+static uint32_t SetPMA(USBD_HandleTypeDef *pdev, uint16_t ep, uint32_t offset, uint32_t size) {
+  HAL_PCDEx_PMAConfig(pdev->pData, ep, PCD_SNG_BUF, offset);
+  return offset + size;
+}
 
 /**
   * @brief  Initializes the Low Level portion of the Device driver.
@@ -213,38 +220,32 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   /* Initialize LL Driver */
   HAL_PCD_Init((PCD_HandleTypeDef*)pdev->pData);
 
-  auto offset = PMA_ADDR_BASE;
+  int offset = PMA_DATA_ADDR_BASE;
 
   /* EP0 Control OUT(0x00)/IN(0x80): 32/32bytes */
-  HAL_PCDEx_PMAConfig(pdev->pData , 0x00 , PCD_SNG_BUF, offset);
-  HAL_PCDEx_PMAConfig(pdev->pData , 0x80 , PCD_SNG_BUF, offset + 0x20);
-
-  offset += 0x40;
+  offset = SetPMA(pdev, 0x00, offset, EP0_PACKET_SIZE);
+  offset = SetPMA(pdev, 0x80, offset, EP0_PACKET_SIZE);
 
   /* EP1 HID IN/OUT: 64bytes (shared) */
-  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPIN_ADDR , PCD_SNG_BUF, offset);
-  HAL_PCDEx_PMAConfig(pdev->pData , CUSTOM_HID_EPOUT_ADDR , PCD_SNG_BUF, offset);
+  offset = SetPMA(pdev, CUSTOM_HID_EPIN_ADDR, offset, 0); // HID IN and OUT share buffer
+  offset = SetPMA(pdev, CUSTOM_HID_EPOUT_ADDR, offset, CUSTOM_HID_EPOUT_SIZE);
 
-  offset += 0x40;
+  /* EP2/3 CDC IN/OUT/CMD: 64/64/0bytes */
+  offset = SetPMA(pdev, CDC_IN_EP, offset, CDC_DATA_FS_IN_PACKET_SIZE);
+  offset = SetPMA(pdev, CDC_OUT_EP, offset, CDC_DATA_FS_OUT_PACKET_SIZE);
+  offset = SetPMA(pdev, CDC_CMD_EP, offset, CDC_CMD_PACKET_SIZE); // IN
 
-  /* EP2/3 CDC IN/OUT/CMD: 64/64/8bytes */
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_IN_EP , PCD_SNG_BUF, offset);
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_OUT_EP , PCD_SNG_BUF, offset + 0x40 * 1);
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_CMD_EP , PCD_SNG_BUF, offset + 0x40 * 2);
-
-  offset += 0x40 * 2 + 0x08;
-
-  /* EP4/5 CDC2 IN/OUT/CMD: 64/64/8bytes */
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_IN_EP2 , PCD_SNG_BUF, offset);
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_OUT_EP2 , PCD_SNG_BUF, offset + 0x40 * 1);
-  HAL_PCDEx_PMAConfig(pdev->pData , CDC_CMD_EP2 , PCD_SNG_BUF, offset + 0x40 * 2);
+  /* EP4/5 CDC2 IN/OUT/CMD: 64/64/0bytes */
+  offset = SetPMA(pdev, CDC_IN_EP2, offset, CDC_DATA_FS_IN_PACKET_SIZE);
+  offset = SetPMA(pdev, CDC_OUT_EP2, offset, CDC_DATA_FS_OUT_PACKET_SIZE);
+  offset = SetPMA(pdev, CDC_CMD_EP2, offset, CDC_CMD_PACKET_SIZE);  // IN
 
   // 6(EPs)*2(IN/OUT)*4(bytes,ADDR+COUNT)=48
-  // 48 + 64 * 6 + 16 = 448, empty: 64
+  // 48 + 64 * 6 = 432, empty: 80bytes
 
   // + 1 CDC?
   // 16 bytes entry 2(EPs)*2(IN/OUT)*4(bytes,ADDR+COUNT)=16
-  // 8: CMD, 16 * 2: IN/OUT, 8: empty? 
+  // 0: CMD, 32 * 2: IN/OUT, empty: 0 bytes 
 
   return USBD_OK;
 }
@@ -446,6 +447,8 @@ void USBD_LL_Delay(uint32_t Delay)
   */
 void HAL_PCDEx_SetConnectionState(PCD_HandleTypeDef *hpcd, uint8_t state)
 {
+  (void) hpcd;
+
   if (state != 0)
   {
     /* Enabling DP Pull-Down bit to Connect internal pull-up on USB DP line */
