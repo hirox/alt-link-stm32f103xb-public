@@ -65,7 +65,7 @@ extern PCD_HandleTypeDef hpcd;
 extern UART_HandleTypeDef UartHandle[3];
 
 /* TIM handler declared in "usbd_cdc_interface.c" file */
-extern TIM_HandleTypeDef TimHandle;
+extern TIM_HandleTypeDef TimHandle[];
 
 extern I2C_HandleTypeDef i2c_handle;
 
@@ -237,9 +237,19 @@ void USART3_IRQHandler(void)
   * @param  None
   * @retval None
   */
-void TIMx_IRQHandler(void)
+void TIM2_IRQHandler(void)
 {
-  HAL_TIM_IRQHandler(&TimHandle);
+  HAL_TIM_IRQHandler(&TimHandle[0]);
+}
+
+void TIM3_IRQHandler(void)
+{
+  HAL_TIM_IRQHandler(&TimHandle[1]);
+}
+
+void TIM4_IRQHandler(void)
+{
+  HAL_TIM_IRQHandler(&TimHandle[2]);
 }
 
 /**

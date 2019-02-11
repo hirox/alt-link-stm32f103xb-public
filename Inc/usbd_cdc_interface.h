@@ -110,14 +110,9 @@
 #define USART3_DMA_TX_IRQn               DMA1_Channel2_IRQn
 
 /* Definition for TIMx clock resources */
-#define TIMx                             TIM2
-#define TIMx_CLK_ENABLE                  __HAL_RCC_TIM2_CLK_ENABLE
-#define TIMx_FORCE_RESET()               do { } while(0)
-#define TIMx_RELEASE_RESET()             do { } while(0)
-
-/* Definition for TIMx's NVIC */
-#define TIMx_IRQn                        TIM2_IRQn
-#define TIMx_IRQHandler                  TIM2_IRQHandler
+#define TIM2_CLK_ENABLE                  __HAL_RCC_TIM2_CLK_ENABLE
+#define TIM3_CLK_ENABLE                  __HAL_RCC_TIM3_CLK_ENABLE
+#define TIM4_CLK_ENABLE                  __HAL_RCC_TIM4_CLK_ENABLE
 
 /* Periodically, the state of the buffer "UserTxBuffer" is checked.
    The period depends on CDC_POLLING_INTERVAL */

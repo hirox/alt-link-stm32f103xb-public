@@ -77,7 +77,7 @@ CDC_WorkMemory CDC = {0};
 /* UART handler declaration */
 UART_HandleTypeDef UartHandle[NUM_CDC];
 /* TIM handler declaration */
-TIM_HandleTypeDef  TimHandle;
+TIM_HandleTypeDef  TimHandle[NUM_CDC];
 /* USB handler declaration */
 extern USBD_HandleTypeDef  USBD_Device;
 
@@ -102,7 +102,7 @@ static int8_t CDC_Itf_Control  (uint32_t index, uint8_t cmd, uint8_t* pbuf, uint
 static int8_t CDC_Itf_Receive  (uint32_t index, uint32_t);
 
 static void Error_Handler(void);
-static void TIM_Config(void);
+static void TIM_Config(uint32_t);
 
 const USBD_CDC_ItfTypeDef USBD_CDC_fops =
 {
@@ -172,16 +172,16 @@ static int8_t CDC_Itf_Init(void)
         /*##-2- Put UART peripheral in DMA reception process ########################*/
         /* Any data received will be stored in "UserTxBuffer" buffer  */
         Uart_Receive_DMA(i);
-    }
 
-    /*##-3- Configure the TIM Base generation  #################################*/
-    TIM_Config();
-  
-    /*##-4- Start the TIM Base generation in interrupt mode ####################*/
-    /* Start Channel1 */
-    if(HAL_TIM_Base_Start_IT(&TimHandle) != HAL_OK) {
-        /* Starting Error */
-        Error_Handler();
+        /*##-3- Configure the TIM Base generation  #################################*/
+        TIM_Config(i);
+
+        /*##-4- Start the TIM Base generation in interrupt mode ####################*/
+        /* Start Channel1 */
+        if(HAL_TIM_Base_Start_IT(&TimHandle[i]) != HAL_OK) {
+            /* Starting Error */
+            Error_Handler();
+        }
     }
 
     return (USBD_OK);
@@ -203,10 +203,6 @@ static int8_t CDC_Itf_DeInit(void) {
         }
         Clear_UART_Status(i);
     }
-
-    /* Reset TIM peripheral */
-    TIMx_FORCE_RESET();
-    TIMx_RELEASE_RESET();
 
     return (USBD_OK);
 }
@@ -496,7 +492,7 @@ void CDC_Send_To_HOST(uint32_t i, uint32_t force) {
 
         if (!force) {
             // Reset TIM counter when data size is larger than packet size
-            LL_TIM_SetCounter(TIMx, 0);
+            LL_TIM_SetCounter(TimHandle[i].Instance, 0);
         }
 
         if(CDC.d[i].UserTxBufPtrOut > ptrIn) {
@@ -554,38 +550,46 @@ __NOINLINE void CDC_Run_In_Thread_Mode()
 #endif
 }
 
+static const uint32_t TIM_IRQn[] = {TIM2_IRQn, TIM3_IRQn, TIM4_IRQn};
+static TIM_TypeDef * const TIM[] = {TIM2, TIM3, TIM4};
 /**
   * @brief  TIM_Config: Configure TIMx timer
   * @param  None.
   * @retval None.
   */
-static void TIM_Config(void)
+static void TIM_Config(uint32_t i)
 {  
-  /* Enable TIM peripheral clock */
-  TIMx_CLK_ENABLE();
+    /* Enable TIM peripheral clock */
+    if (i == 0) {
+        TIM2_CLK_ENABLE();
+    } else if (i == 1) {
+        TIM3_CLK_ENABLE();
+    } else {
+        TIM4_CLK_ENABLE();
+    }
 
-  /* Set Interrupt Group Priority */
-  HAL_NVIC_SetPriority(TIMx_IRQn, 6, 2);
-  HAL_NVIC_EnableIRQ(TIMx_IRQn);
+    /* Set Interrupt Group Priority */
+    HAL_NVIC_SetPriority(TIM_IRQn[i], 8, i);
+    HAL_NVIC_EnableIRQ(TIM_IRQn[i]);
 
-  /* Set TIMx instance */
-  TimHandle.Instance = TIMx;
+    /* Set TIMx instance */
+    TimHandle[i].Instance = TIM[i];
 
-  /* Initialize TIM3 peripheral as follow:
-       + Period = 10000 - 1
-       + Prescaler = ((SystemCoreClock/2)/10000) - 1
-       + ClockDivision = 0
-       + Counter direction = Up
-  */
-  TimHandle.Init.Period = (CDC_POLLING_INTERVAL*1000) - 1;
-  TimHandle.Init.Prescaler = 84-1;
-  TimHandle.Init.ClockDivision = 0;
-  TimHandle.Init.CounterMode = TIM_COUNTERMODE_UP;
-  if(HAL_TIM_Base_Init(&TimHandle) != HAL_OK)
-  {
-    /* Initialization Error */
-    Error_Handler();
-  }
+    /* Initialize TIM3 peripheral as follow:
+        + Period = 10000 - 1
+        + Prescaler = ((SystemCoreClock/2)/10000) - 1
+        + ClockDivision = 0
+        + Counter direction = Up
+    */
+    TimHandle[i].Init.Period = (CDC_POLLING_INTERVAL*1000) - 1;
+    TimHandle[i].Init.Prescaler = 84-1;
+    TimHandle[i].Init.ClockDivision = 0;
+    TimHandle[i].Init.CounterMode = TIM_COUNTERMODE_UP;
+    if(HAL_TIM_Base_Init(&TimHandle[i]) != HAL_OK)
+    {
+        /* Initialization Error */
+        Error_Handler();
+    }
 }
 
 /**
