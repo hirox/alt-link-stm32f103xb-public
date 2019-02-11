@@ -40,12 +40,6 @@
 
 U8 USBD_AltSetting[USBD_IF_NUM];
 U8 USBD_EP0Buf[USBD_MAX_PACKET0];
-const U8 usbd_power = USBD_POWER;
-const U8 usbd_hs_enable = USBD_HS_ENABLE;
-const U16 usbd_if_num = USBD_IF_NUM;
-const U8 usbd_ep_num = USBD_EP_NUM;
-const U8 usbd_max_packet0 = USBD_MAX_PACKET0;
-
 
 /*------------------------------------------------------------------------------
  *      USB Device Class Configuration
@@ -81,6 +75,11 @@ const U8 usbd_cdc_acm_cif_num = USBD_CDC_ACM_CIF_NUM;
 const U8 usbd_cdc_acm_dif_num = USBD_CDC_ACM_DIF_NUM;
 #endif
 
+#if (CDC_ENDPOINT2)
+const U8 usbd_cdc_acm_cif_num2 = USBD_CDC_ACM_CIF_NUM2;
+const U8 usbd_cdc_acm_dif_num2 = USBD_CDC_ACM_DIF_NUM2;
+#endif
+
 /*------------------------------------------------------------------------------
  *      CDC Sizes
  *----------------------------------------------------------------------------*/
@@ -108,6 +107,7 @@ const U8 usbd_cdc_acm_dif_num = USBD_CDC_ACM_DIF_NUM;
 #define USBD_WTOTALLENGTH                 (USB_CONFIGUARTION_DESC_SIZE +                 \
                                            USBD_CDC_ACM_DESC_LEN * USBD_CDC_ACM_ENABLE + \
                                            USBD_CDC_ACM_DESC_LEN * CDC_ENDPOINT2 + \
+                                           USBD_CDC_ACM_DESC_LEN * CDC_ENDPOINT3 + \
                                            USBD_HID_DESC_LEN     * USBD_HID_ENABLE     + \
                                            USBD_MSC_DESC_LEN     * USBD_MSC_ENABLE + \
                                            USBD_I2C_DESC_LEN     * USBD_I2C_ENABLE)
@@ -537,7 +537,7 @@ const U8 USBD_DeviceQualifier_HS[] = { 0 };
   CDC_CS_INTERFACE,                     /* bDescriptorType: CS_INTERFACE */                                 \
   CDC_CALL_MANAGEMENT,                  /* bDescriptorSubtype: Call Management Func Desc */                 \
   0x03,                                 /* bmCapabilities: device handles call management */                \
-  0x02,                                 /* bDataInterface: CDC data IF ID */                                \
+  (dif),                                /* bDataInterface: CDC data IF ID */                                \
 /* Abstract Control Management Functional Descriptor */                                                     \
   CDC_ABSTRACT_CONTROL_MANAGEMENT_SIZE, /* bFunctionLength */                                               \
   CDC_CS_INTERFACE,                     /* bDescriptorType: CS_INTERFACE */                                 \
@@ -556,7 +556,7 @@ const U8 USBD_DeviceQualifier_HS[] = { 0 };
   USB_ENDPOINT_DESCRIPTOR_TYPE,         /* bDescriptorType */                                               \
   USB_ENDPOINT_IN((ep)),                /* bEndpointAddress */                                              \
   USB_ENDPOINT_TYPE_INTERRUPT,          /* bmAttributes */                                                  \
-  WBVAL(USBD_CDC_ACM_WMAXPACKETSIZE),   /* wMaxPacketSize */                                                \
+  WBVAL(USBD_CDC_ACM_CMD_PACKETSIZE),   /* wMaxPacketSize */                                                \
   USBD_CDC_ACM_BINTERVAL,               /* bInterval */
 
 #define CDC_ACM_DESC_IF1(dif, str_num)                                                                      \
@@ -571,13 +571,13 @@ const U8 USBD_DeviceQualifier_HS[] = { 0 };
   0x00,                                 /* bInterfaceProtocol: no protocol used */                          \
   str_num,                              /* iInterface */
 
-#define CDC_ACM_EP_IF1(epout, epin)     /* CDC Endpoints for Interface 1 for Low-speed/Full-speed */        \
+#define CDC_ACM_EP_IF1(epout, epin, pkt)/* CDC Endpoints for Interface 1 for Low-speed/Full-speed */        \
 /* Endpoint, EP Bulk OUT */                                                                                 \
   USB_ENDPOINT_DESC_SIZE,               /* bLength */                                                       \
   USB_ENDPOINT_DESCRIPTOR_TYPE,         /* bDescriptorType */                                               \
   USB_ENDPOINT_OUT((epout)),            /* bEndpointAddress */                                              \
   USB_ENDPOINT_TYPE_BULK,               /* bmAttributes */                                                  \
-  WBVAL(USBD_CDC_ACM_WMAXPACKETSIZE1),  /* wMaxPacketSize */                                                \
+  WBVAL(pkt),                           /* wMaxPacketSize */                                                \
   0x00,                                 /* bInterval: ignore for Bulk transfer */                           \
                                                                                                             \
 /* Endpoint, EP Bulk IN */                                                                                  \
@@ -585,7 +585,7 @@ const U8 USBD_DeviceQualifier_HS[] = { 0 };
   USB_ENDPOINT_DESCRIPTOR_TYPE,         /* bDescriptorType */                                               \
   USB_ENDPOINT_IN((epin)),              /* bEndpointAddress */                                              \
   USB_ENDPOINT_TYPE_BULK,               /* bmAttributes */                                                  \
-  WBVAL(USBD_CDC_ACM_WMAXPACKETSIZE1),  /* wMaxPacketSize */                                                \
+  WBVAL(pkt),                           /* wMaxPacketSize */                                                \
   0x00,                                 /* bInterval: ignore for Bulk transfer */
 
 #define I2C_DESC                                                                                            \
@@ -644,7 +644,7 @@ const U8 USBD_ConfigDescriptor[] = {
     CDC_ACM_DESC_IF0(USBD_CDC_ACM_CIF_NUM, USBD_CDC_ACM_DIF_NUM, USBD_CDC_ACM_CIF_STR_NUM)
     CDC_ACM_EP_IF0(USBD_CDC_ACM_EP_INTIN)
     CDC_ACM_DESC_IF1(USBD_CDC_ACM_DIF_NUM, USBD_CDC_ACM_DIF_STR_NUM)
-    CDC_ACM_EP_IF1(USBD_CDC_ACM_EP_BULKOUT, USBD_CDC_ACM_EP_BULKIN)
+    CDC_ACM_EP_IF1(USBD_CDC_ACM_EP_BULKOUT, USBD_CDC_ACM_EP_BULKIN, USBD_CDC_ACM_DATA_PACKETSIZE)
 #endif
 
 #if (CDC_ENDPOINT2)
@@ -653,8 +653,18 @@ const U8 USBD_ConfigDescriptor[] = {
 #endif
     CDC_ACM_DESC_IF0(USBD_CDC_ACM_CIF_NUM2, USBD_CDC_ACM_DIF_NUM2, USBD_CDC_ACM_CIF_STR_NUM2)
     CDC_ACM_EP_IF0(USBD_CDC_ACM_EP_INTIN2)
-    CDC_ACM_DESC_IF1(USBD_CDC_ACM_DIF_NUM2, USBD_CDC_ACM_DIF_STR_NUM)
-    CDC_ACM_EP_IF1(USBD_CDC_ACM_EP_BULKOUT2, USBD_CDC_ACM_EP_BULKIN2)
+    CDC_ACM_DESC_IF1(USBD_CDC_ACM_DIF_NUM2, USBD_CDC_ACM_DIF_STR_NUM2)
+    CDC_ACM_EP_IF1(USBD_CDC_ACM_EP_BULKOUT2, USBD_CDC_ACM_EP_BULKIN2, USBD_CDC_ACM_DATA_PACKETSIZE)
+#endif
+
+#if (CDC_ENDPOINT3)
+#if (USBD_MULTI_IF)
+    CDC_ACM_DESC_IAD(USBD_CDC_ACM_CIF_NUM3, 2, USBD_CDC_ACM_CIF_STR_NUM3)
+#endif
+    CDC_ACM_DESC_IF0(USBD_CDC_ACM_CIF_NUM3, USBD_CDC_ACM_DIF_NUM3, USBD_CDC_ACM_CIF_STR_NUM3)
+    CDC_ACM_EP_IF0(USBD_CDC_ACM_EP_INTIN3)
+    CDC_ACM_DESC_IF1(USBD_CDC_ACM_DIF_NUM3, USBD_CDC_ACM_DIF_STR_NUM3)
+    CDC_ACM_EP_IF1(USBD_CDC_ACM_EP_BULKOUT3, USBD_CDC_ACM_EP_BULKIN3, CDC_DATA_CAN_FS_PACKET_SIZE)
 #endif
 
 #if (USBD_I2C_ENABLE)
@@ -711,6 +721,10 @@ const __packed struct {
     USBD_STR_DEF(CDC_ACM_CIF_STRDESC2);
     USBD_STR_DEF(CDC_ACM_DIF_STRDESC2);
 #endif
+#if (CDC_ENDPOINT3)
+    USBD_STR_DEF(CDC_ACM_CIF_STRDESC3);
+    USBD_STR_DEF(CDC_ACM_DIF_STRDESC3);
+#endif
 #if (USBD_HID_ENABLE)
     USBD_STR_DEF(HID_STRDESC);
 #endif
@@ -740,6 +754,10 @@ const __packed struct {
 #if (CDC_ENDPOINT2)
     USBD_STR_VAL(CDC_ACM_CIF_STRDESC2),
     USBD_STR_VAL(CDC_ACM_DIF_STRDESC2),
+#endif
+#if (CDC_ENDPOINT3)
+    USBD_STR_VAL(CDC_ACM_CIF_STRDESC3),
+    USBD_STR_VAL(CDC_ACM_DIF_STRDESC3),
 #endif
 #if (USBD_HID_ENABLE)
     USBD_STR_VAL(HID_STRDESC),

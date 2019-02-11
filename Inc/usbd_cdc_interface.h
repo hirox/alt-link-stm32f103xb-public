@@ -59,52 +59,55 @@
 /* User can use this section to tailor USARTx/UARTx instance used and associated 
    resources */
 /* Definition for USARTx clock resources */
-#define USARTx                           USART1
-#define USARTx_CLK_ENABLE()              __HAL_RCC_USART1_CLK_ENABLE();
+#define USART1_CLK_ENABLE()              __HAL_RCC_USART1_CLK_ENABLE();
 #define DMAx_CLK_ENABLE()                __HAL_RCC_DMA1_CLK_ENABLE()
-#define USARTx_RX_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOA_CLK_ENABLE()
-#define USARTx_TX_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOA_CLK_ENABLE() 
+#define USARTx_GPIO_CLK_ENABLE()  do { \
+                                    __HAL_RCC_GPIOA_CLK_ENABLE(); \
+                                    __HAL_RCC_GPIOB_CLK_ENABLE(); \
+                                  } while(0)
 
-#define USARTx_FORCE_RESET()             __HAL_RCC_USART1_FORCE_RESET()
-#define USARTx_RELEASE_RESET()           __HAL_RCC_USART1_RELEASE_RESET()
+#define USART1_FORCE_RESET()             __HAL_RCC_USART1_FORCE_RESET()
+#define USART1_RELEASE_RESET()           __HAL_RCC_USART1_RELEASE_RESET()
+#define USART2_FORCE_RESET()             __HAL_RCC_USART2_FORCE_RESET()
+#define USART2_RELEASE_RESET()           __HAL_RCC_USART2_RELEASE_RESET()
+#define USART3_FORCE_RESET()             __HAL_RCC_USART3_FORCE_RESET()
+#define USART3_RELEASE_RESET()           __HAL_RCC_USART3_RELEASE_RESET()
 
 /* Definition for USARTx Pins */
-#define USARTx_TX_PIN                    GPIO_PIN_9
-#define USARTx_TX_GPIO_PORT              GPIOA
-#define USARTx_RX_PIN                    GPIO_PIN_10
-#define USARTx_RX_GPIO_PORT              GPIOA
-
-/* Definition for USARTx's NVIC: used for receiving data over Rx pin */
-#define USARTx_IRQn                      USART1_IRQn
-#define USARTx_IRQHandler                USART1_IRQHandler
+#define USART1_TX_PIN                    GPIO_PIN_9
+#define USART1_RX_PIN                    GPIO_PIN_10
 
 /* Definition for USARTx's DMA: used for transmitting data over Tx pin */
-#define USARTx_TX_DMA_STREAM             DMA1_Channel4
-#define USARTx_RX_DMA_STREAM             DMA1_Channel5
-#define USARTx_DMA_TX_IRQHandler         DMA1_Channel4_IRQHandler
-#define USARTx_DMA_TX_IRQn               DMA1_Channel4_IRQn
-
+#define USART1_TX_DMA_STREAM             DMA1_Channel4
+#define USART1_RX_DMA_STREAM             DMA1_Channel5
+#define USART1_DMA_TX_IRQHandler         DMA1_Channel4_IRQHandler
+#define USART1_DMA_TX_IRQn               DMA1_Channel4_IRQn
 
 /* Definition for USARTx clock resources */
-#define USARTx2                           USART2
-#define USARTx_CLK_ENABLE2()              __HAL_RCC_USART2_CLK_ENABLE();
-
-#define USARTx_FORCE_RESET2()             __HAL_RCC_USART2_FORCE_RESET()
-#define USARTx_RELEASE_RESET2()           __HAL_RCC_USART2_RELEASE_RESET()
+#define USART2_CLK_ENABLE()              __HAL_RCC_USART2_CLK_ENABLE();
 
 /* Definition for USARTx Pins */
-#define USARTx_TX_PIN2                    GPIO_PIN_2
-#define USARTx_RX_PIN2                    GPIO_PIN_3
-
-/* Definition for USARTx's NVIC: used for receiving data over Rx pin */
-#define USARTx_IRQn2                      USART2_IRQn
-#define USARTx_IRQHandler2                USART2_IRQHandler
+#define USART2_TX_PIN                    GPIO_PIN_2
+#define USART2_RX_PIN                    GPIO_PIN_3
 
 /* Definition for USARTx's DMA: used for transmitting data over Tx pin */
-#define USARTx_TX_DMA_STREAM2             DMA1_Channel7
-#define USARTx_RX_DMA_STREAM2             DMA1_Channel6
-#define USARTx_DMA_TX_IRQHandler2         DMA1_Channel7_IRQHandler
-#define USARTx_DMA_TX_IRQn2               DMA1_Channel7_IRQn
+#define USART2_TX_DMA_STREAM             DMA1_Channel7
+#define USART2_RX_DMA_STREAM             DMA1_Channel6
+#define USART2_DMA_TX_IRQHandler         DMA1_Channel7_IRQHandler
+#define USART2_DMA_TX_IRQn               DMA1_Channel7_IRQn
+
+/* Definition for USARTx clock resources */
+#define USART3_CLK_ENABLE()              __HAL_RCC_USART3_CLK_ENABLE();
+
+/* Definition for USARTx Pins */
+#define USART3_TX_PIN                    GPIO_PIN_10
+#define USART3_RX_PIN                    GPIO_PIN_11
+
+/* Definition for USARTx's DMA: used for transmitting data over Tx pin */
+#define USART3_TX_DMA_STREAM             DMA1_Channel2
+#define USART3_RX_DMA_STREAM             DMA1_Channel3
+#define USART3_DMA_TX_IRQHandler         DMA1_Channel2_IRQHandler
+#define USART3_DMA_TX_IRQn               DMA1_Channel2_IRQn
 
 /* Definition for TIMx clock resources */
 #define TIMx                             TIM2
@@ -118,7 +121,7 @@
 
 /* Periodically, the state of the buffer "UserTxBuffer" is checked.
    The period depends on CDC_POLLING_INTERVAL */
-#define CDC_POLLING_INTERVAL             1 /* in ms. The max is 65 and the min is 1 */
+#define CDC_POLLING_INTERVAL             4 /* in ms. The max is 65 and the min is 1 */
 
 /* Definition for I2Cx clock resources */
 #define I2Cx                            I2C1

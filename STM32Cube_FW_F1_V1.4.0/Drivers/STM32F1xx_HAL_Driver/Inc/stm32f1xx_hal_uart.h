@@ -186,6 +186,8 @@ typedef struct
                                                        This parameter can be a value of @ref HAL_UART_StateTypeDef */
 
   __IO uint32_t                 ErrorCode;        /*!< UART Error code                    */
+
+  uint32_t                      Index;            /*!< UART Index (Alt-Link added) */
 }UART_HandleTypeDef;
 
 /**

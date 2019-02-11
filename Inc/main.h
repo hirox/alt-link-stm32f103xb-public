@@ -8,7 +8,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright © 2016 STMicroelectronics International N.V. 
+  * <h2><center>&copy; Copyright ï¿½ 2016 STMicroelectronics International N.V. 
   * All rights reserved.</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -51,7 +51,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
-//#include "stm3210e_eval.h"
 #include "usbd_core.h"
 #include "stm32f1xx_hal_pcd.h"
 #include "usbd_desc.h"

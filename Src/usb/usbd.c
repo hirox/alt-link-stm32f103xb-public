@@ -10,7 +10,7 @@
 #include "usbd_cdc_io.h"
 
 extern USBD_CUSTOM_HID_ItfTypeDef USBD_CustomHID_fops;
-extern USBD_CDC_ItfTypeDef USBD_CDC_fops;
+extern const USBD_CDC_ItfTypeDef USBD_CDC_fops;
 
 USBD_CUSTOM_HID_HandleTypeDef hidClassData;
 
@@ -61,27 +61,24 @@ static uint8_t  USBD_Class_DeInit (USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 
     // HID
     /* Close CUSTOM_HID EP IN */
-    USBD_LL_CloseEP(pdev,
-                  CUSTOM_HID_EPIN_ADDR);
+    USBD_LL_CloseEP(pdev, CUSTOM_HID_EPIN_ADDR);
 
     /* Close CUSTOM_HID EP OUT */
-    USBD_LL_CloseEP(pdev,
-                  CUSTOM_HID_EPOUT_ADDR);
+    USBD_LL_CloseEP(pdev, CUSTOM_HID_EPOUT_ADDR);
 
     USBD_CustomHID_fops.DeInit();
 
     // CDC
-    /* Close EP IN */
-    USBD_LL_CloseEP(pdev,
-              CDC_IN_EP);
-
-    /* Close EP OUT */
-    USBD_LL_CloseEP(pdev,
-              CDC_OUT_EP);
-
-    /* Close Command IN EP */
-    USBD_LL_CloseEP(pdev,
-              CDC_CMD_EP);
+    /* Close EP IN/OUT/CMD */
+    USBD_LL_CloseEP(pdev, CDC_IN_EP);
+    USBD_LL_CloseEP(pdev, CDC_IN_EP2);
+    USBD_LL_CloseEP(pdev, CDC_IN_EP3);
+    USBD_LL_CloseEP(pdev, CDC_OUT_EP);
+    USBD_LL_CloseEP(pdev, CDC_OUT_EP2);
+    USBD_LL_CloseEP(pdev, CDC_OUT_EP3);
+    USBD_LL_CloseEP(pdev, CDC_CMD_EP);
+    USBD_LL_CloseEP(pdev, CDC_CMD_EP2);
+    USBD_LL_CloseEP(pdev, CDC_CMD_EP3);
 
     USBD_CDC_fops.DeInit();
 

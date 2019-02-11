@@ -44,7 +44,9 @@ static uint8_t i2c_addr = 0;
 static uint8_t i2c_is_begin = 0;
 static uint8_t i2c_is_end = 0;
 static uint8_t i2c_read = 0;
-static uint8_t i2c_buffer[8192];    // Maximum length of Linux
+
+// Maximum length of Linux is 8192, but we support 1024 bytes to save RAM
+static uint8_t i2c_buffer[1024];
 
 static uint8_t run_send_data = 0;
 static uint8_t run_send_status = 0;

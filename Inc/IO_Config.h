@@ -47,16 +47,16 @@
 
 // SWD
 #define SWCLK_TCK_PIN_PORT           GPIOB
-#define SWCLK_TCK_PIN                GPIO_PIN_12
-#define SWCLK_TCK_PIN_Bit            12
+#define SWCLK_TCK_PIN                GPIO_PIN_0
+#define SWCLK_TCK_PIN_Bit            0
 
 #define SWDIO_OUT_PIN_PORT           GPIOB
-#define SWDIO_OUT_PIN                GPIO_PIN_13
-#define SWDIO_OUT_PIN_Bit            13
+#define SWDIO_OUT_PIN                GPIO_PIN_1
+#define SWDIO_OUT_PIN_Bit            1
 
 #define SWDIO_IN_PIN_PORT            GPIOB
-#define SWDIO_IN_PIN                 GPIO_PIN_13
-#define SWDIO_IN_PIN_Bit             13
+#define SWDIO_IN_PIN                 GPIO_PIN_1
+#define SWDIO_IN_PIN_Bit             1
 
 // JTAG
 #define JTAG_TDI_PIN_PORT            GPIOB

@@ -28,6 +28,8 @@
 /* Define to prevent recursive inclusion -------------------------------------*/
 #pragma once
 
+#include <stdint.h>
+
 #ifdef __cplusplus
  extern "C" {
 #endif
@@ -37,25 +39,30 @@
   */ 
 #define CDC_ENDPOINT
 #define CDC_ENDPOINT2
+#define CDC_ENDPOINT3
 
-#define CDC_IN_EP                                   0x83  /* EP3 for data IN */
-#define CDC_OUT_EP                                  0x03  /* EP3 for data OUT */
-#define CDC_CMD_EP                                  0x82  /* EP2 for CDC commands */
-#define CDC_IN_EP2                                  0x85  /* EP5 for data IN */
-#define CDC_OUT_EP2                                 0x05  /* EP5 for data OUT */
-#define CDC_CMD_EP2                                 0x84  /* EP4 for CDC commands */
+#define CDC_IN_EP                                   0x82  /* EP3 for data IN */
+#define CDC_OUT_EP                                  0x02  /* EP3 for data OUT */
+#define CDC_IN_EP2                                  0x83  /* EP5 for data IN */
+#define CDC_OUT_EP2                                 0x03  /* EP5 for data OUT */
+#define CDC_IN_EP3                                  0x84  /* EP7 for data IN */
+#define CDC_OUT_EP3                                 0x04  /* EP7 for data OUT */
+#define CDC_CMD_EP                                  0x85  /* EP2 for CDC commands */
+#define CDC_CMD_EP2                                 0x86  /* EP4 for CDC commands */
+#define CDC_CMD_EP3                                 0x87  /* EP6 for CDC commands */
 
 /* CDC Endpoints parameters: you can fine tune these values depending on the needed baudrates and performance. */
 #define CDC_DATA_HS_MAX_PACKET_SIZE                 512  /* Endpoint IN & OUT Packet size */
 #define CDC_DATA_FS_MAX_PACKET_SIZE                 64   /* Endpoint IN & OUT Packet size */
-#define CDC_CMD_PACKET_SIZE                         0    /* Control Endpoint Packet size */
+#define CDC_CMD_PACKET_SIZE                         8    /* Control Endpoint Packet size */
 
-#define USB_CDC_CONFIG_DESC_SIZ                     67
 #define CDC_DATA_HS_IN_PACKET_SIZE                  CDC_DATA_HS_MAX_PACKET_SIZE
 #define CDC_DATA_HS_OUT_PACKET_SIZE                 CDC_DATA_HS_MAX_PACKET_SIZE
 
 #define CDC_DATA_FS_IN_PACKET_SIZE                  CDC_DATA_FS_MAX_PACKET_SIZE
 #define CDC_DATA_FS_OUT_PACKET_SIZE                 CDC_DATA_FS_MAX_PACKET_SIZE
+
+#define CDC_DATA_CAN_FS_PACKET_SIZE                 32
 
 /*---------------------------------------------------------------------*/
 /*  CDC definitions                                                    */
@@ -69,6 +76,27 @@
 #define CDC_GET_LINE_CODING                         0x21
 #define CDC_SET_CONTROL_LINE_STATE                  0x22
 #define CDC_SEND_BREAK                              0x23
+
+#define APP_RX_DATA_SIZE  512
+#define APP_TX_DATA_SIZE  2048
+
+typedef struct {
+    struct {
+        /* Received Data over USB are stored in this buffer (Host -> buffer -> UART) */
+        uint8_t UserRxBuffer[APP_RX_DATA_SIZE + CDC_DATA_FS_OUT_PACKET_SIZE];
+        /* Received Data over UART (CDC interface) are stored in this buffer (UART -> buffer -> Host) */
+        uint8_t UserTxBuffer[APP_TX_DATA_SIZE];
+        uint32_t UserTxBufPtrOut; /* Increment this pointer or roll it back to
+                                         start address when data are sent over USB */
+        uint32_t RxOverWriteSize;
+        uint32_t RxBufWritePos;
+        uint32_t RxBufReadPos;
+        uint32_t Run_Receive_From_HOST;
+        uint32_t Run_PortConfig;
+        uint32_t Run_DMA_Transfer;
+    } d[3];
+    uint32_t Run_TIM;
+} CDC_WorkMemory;
 
 #ifdef __cplusplus
 }

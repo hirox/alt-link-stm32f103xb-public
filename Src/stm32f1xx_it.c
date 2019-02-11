@@ -62,7 +62,7 @@
 extern PCD_HandleTypeDef hpcd;
 
 /* UART handler declared in "usbd_cdc_interface.c" file */
-extern UART_HandleTypeDef UartHandle[2];
+extern UART_HandleTypeDef UartHandle[3];
 
 /* TIM handler declared in "usbd_cdc_interface.c" file */
 extern TIM_HandleTypeDef TimHandle;
@@ -197,14 +197,19 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
   * @param  None
   * @retval None
   */
-void USARTx_DMA_TX_IRQHandler(void)
+void USART1_DMA_TX_IRQHandler(void)
 {
   HAL_DMA_IRQHandler(UartHandle[0].hdmatx);
 }
 
-void USARTx_DMA_TX_IRQHandler2(void)
+void USART2_DMA_TX_IRQHandler(void)
 {
   HAL_DMA_IRQHandler(UartHandle[1].hdmatx);
+}
+
+void USART3_DMA_TX_IRQHandler(void)
+{
+  HAL_DMA_IRQHandler(UartHandle[2].hdmatx);
 }
 
 /**
@@ -212,14 +217,19 @@ void USARTx_DMA_TX_IRQHandler2(void)
   * @param  None
   * @retval None
   */
-void USARTx_IRQHandler(void)
+void USART1_IRQHandler(void)
 {
   HAL_UART_IRQHandler(&UartHandle[0]);
 }
 
-void USARTx_IRQHandler2(void)
+void USART2_IRQHandler(void)
 {
   HAL_UART_IRQHandler(&UartHandle[1]);
+}
+
+void USART3_IRQHandler(void)
+{
+  HAL_UART_IRQHandler(&UartHandle[2]);
 }
 
 /**

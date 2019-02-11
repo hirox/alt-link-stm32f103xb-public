@@ -27,12 +27,6 @@
  *----------------------------------------------------------------------------*/
 extern U8 USBD_AltSetting[];
 extern U8 USBD_EP0Buf[];
-extern const U8 usbd_power;
-extern const U8 usbd_hs_enable;
-extern const U16 usbd_if_num;
-extern const U8 usbd_ep_num;
-extern const U8 usbd_max_packet0;
-
 
 /*------------------------------------------------------------------------------
  *           USB Device Class Configuration

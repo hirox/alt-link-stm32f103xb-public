@@ -188,10 +188,9 @@ void HAL_PCD_DisconnectCallback(PCD_HandleTypeDef *hpcd)
 // PCD: Peripheral Controller Driver
 // MSP: MCU Support Package
 
-// 6 eps * 4 bytes (ADDR/COUNT) * 2 entries (TX/RX) => 48bytes (512-48=464, 464-64*6=80, 80-4*2=72)
-#define NUMBER_OF_EPS      6
+// 8 eps * 4 bytes (ADDR/COUNT) * 2 entries (TX/RX) => 64bytes (512-64=448, 448-64*7=0)
+#define NUMBER_OF_EPS      8
 #define PMA_DATA_ADDR_BASE (NUMBER_OF_EPS * 4 * 2)
-#define EP0_PACKET_SIZE    0x20
 
 static uint32_t SetPMA(USBD_HandleTypeDef *pdev, uint16_t ep, uint32_t offset, uint32_t size) {
   HAL_PCDEx_PMAConfig(pdev->pData, ep, PCD_SNG_BUF, offset);
@@ -223,29 +222,34 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   int offset = PMA_DATA_ADDR_BASE;
 
   /* EP0 Control OUT(0x00)/IN(0x80): 32/32bytes */
-  offset = SetPMA(pdev, 0x00, offset, EP0_PACKET_SIZE);
-  offset = SetPMA(pdev, 0x80, offset, EP0_PACKET_SIZE);
+  offset = SetPMA(pdev, 0x00, offset, USB_MAX_EP0_SIZE);
+  offset = SetPMA(pdev, 0x80, offset, USB_MAX_EP0_SIZE);
 
   /* EP1 HID IN/OUT: 64bytes (shared) */
   offset = SetPMA(pdev, CUSTOM_HID_EPIN_ADDR, offset, 0); // HID IN and OUT share buffer
   offset = SetPMA(pdev, CUSTOM_HID_EPOUT_ADDR, offset, CUSTOM_HID_EPOUT_SIZE);
 
-  /* EP2/3 CDC IN/OUT/CMD: 64/64/0bytes */
+  /* EP2 CDC IN/OUT: 64/64bytes */
   offset = SetPMA(pdev, CDC_IN_EP, offset, CDC_DATA_FS_IN_PACKET_SIZE);
   offset = SetPMA(pdev, CDC_OUT_EP, offset, CDC_DATA_FS_OUT_PACKET_SIZE);
-  offset = SetPMA(pdev, CDC_CMD_EP, offset, CDC_CMD_PACKET_SIZE); // IN
 
-  /* EP4/5 CDC2 IN/OUT/CMD: 64/64/0bytes */
+  /* EP3 CDC2 IN/OUT: 64/64bytes */
   offset = SetPMA(pdev, CDC_IN_EP2, offset, CDC_DATA_FS_IN_PACKET_SIZE);
   offset = SetPMA(pdev, CDC_OUT_EP2, offset, CDC_DATA_FS_OUT_PACKET_SIZE);
-  offset = SetPMA(pdev, CDC_CMD_EP2, offset, CDC_CMD_PACKET_SIZE);  // IN
 
-  // 6(EPs)*2(IN/OUT)*4(bytes,ADDR+COUNT)=48
-  // 48 + 64 * 6 = 432, empty: 80bytes
+  /* EP4 CDC3(SLCAN) IN/OUT: 32/32bytes */
+  offset = SetPMA(pdev, CDC_IN_EP3, offset, CDC_DATA_CAN_FS_PACKET_SIZE);
+  offset = SetPMA(pdev, CDC_OUT_EP3, offset, CDC_DATA_CAN_FS_PACKET_SIZE);
 
-  // + 1 CDC?
-  // 16 bytes entry 2(EPs)*2(IN/OUT)*4(bytes,ADDR+COUNT)=16
-  // 0: CMD, 32 * 2: IN/OUT, empty: 0 bytes 
+  /* EP5/6/7 CDC CMDs: 0bytes */
+  /* allocate 0 bytes for CDC CMD eps */
+  /* [TODO] remove to make 24 bytes space */
+  offset = SetPMA(pdev, CDC_CMD_EP, offset, 0/*CDC_CMD_PACKET_SIZE*/);  // IN
+  offset = SetPMA(pdev, CDC_CMD_EP2, offset, 0/*CDC_CMD_PACKET_SIZE*/); // IN
+  offset = SetPMA(pdev, CDC_CMD_EP3, offset, 0/*CDC_CMD_PACKET_SIZE*/); // IN
+
+  // 8(EPs)*2(IN/OUT)*4(bytes,ADDR+COUNT)=64
+  // 64 + 64 * 7 = 512, empty: 0bytes
 
   return USBD_OK;
 }

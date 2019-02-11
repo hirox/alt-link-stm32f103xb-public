@@ -34,77 +34,66 @@
 #include "stm32f1xx_hal.h"
 #include "usbd_cdc_interface.h"
 
-static DMA_HandleTypeDef hdma_tx;
-static DMA_HandleTypeDef hdma_tx2;
-static DMA_HandleTypeDef hdma_rx;
-static DMA_HandleTypeDef hdma_rx2;
+static DMA_HandleTypeDef hdma_tx[3];
+static DMA_HandleTypeDef hdma_rx[3];
 
-/**
-  * @brief UART MSP Initialization 
-  *        This function configures the hardware resources used in this example: 
-  *           - Peripheral's clock enable
-  *           - Peripheral's GPIO Configuration  
-  *           - NVIC configuration for UART interrupt request enable
-  * @param huart: UART handle pointer
-  * @retval None
-  */
-void HAL_UART_MspInit(UART_HandleTypeDef *huart)
-{
-  GPIO_InitTypeDef  GPIO_InitStruct;
+static const uint32_t const USART_IRQn[] = {USART1_IRQn, USART2_IRQn, USART3_IRQn};
+static const uint32_t const USART_DMA_IRQn[] = {USART1_DMA_TX_IRQn, USART2_DMA_TX_IRQn, USART3_DMA_TX_IRQn};
+static DMA_Channel_TypeDef* const DMA_TX_Stream[] = {USART1_TX_DMA_STREAM, USART2_TX_DMA_STREAM, USART3_TX_DMA_STREAM};
+static DMA_Channel_TypeDef* const DMA_RX_Stream[] = {USART1_RX_DMA_STREAM, USART2_RX_DMA_STREAM, USART3_RX_DMA_STREAM};
+static GPIO_TypeDef* const GPIO_Port[] = {GPIOA, GPIOA, GPIOB};
+static const uint32_t const GPIO_TX_Pin[] = {USART1_TX_PIN, USART2_TX_PIN, USART3_TX_PIN};
+static const uint32_t const GPIO_RX_Pin[] = {USART1_RX_PIN, USART2_RX_PIN, USART3_RX_PIN};
+
+static void UART_Init_Internal(UART_HandleTypeDef *huart, uint32_t index) {
   
   /*##-1- Enable peripherals and GPIO Clocks #################################*/
   /* Enable GPIO clock */
-  USARTx_TX_GPIO_CLK_ENABLE();
-  USARTx_RX_GPIO_CLK_ENABLE();
+  USARTx_GPIO_CLK_ENABLE();
   
   /* Enable USARTx clock */
-  if (huart->Instance == USARTx) {
-      USARTx_CLK_ENABLE();
+  if (huart->Instance == USART1) {
+      USART1_CLK_ENABLE();
+  } else if (huart->Instance == USART2) {
+      USART2_CLK_ENABLE();
   } else {
-      USARTx_CLK_ENABLE2();
+      USART3_CLK_ENABLE();
   }
    
   /*##-2- Configure peripheral GPIO ##########################################*/  
   /* UART TX GPIO pin configuration  */
-  GPIO_InitStruct.Pin       = USARTx_TX_PIN;
-  GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull      = GPIO_PULLUP;
-  GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_HIGH;
+  {
+    GPIO_InitTypeDef  GPIO_InitStruct;
 
-  HAL_GPIO_Init(USARTx_TX_GPIO_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin       = GPIO_TX_Pin[index];
+    GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull      = GPIO_PULLUP;
+    GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_HIGH;
 
-  GPIO_InitStruct.Pin       = USARTx_TX_PIN2;
-  HAL_GPIO_Init(USARTx_TX_GPIO_PORT, &GPIO_InitStruct);
-  
-  /* UART RX GPIO pin configuration  */
-  GPIO_InitStruct.Pin = USARTx_RX_PIN;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    HAL_GPIO_Init(GPIO_Port[index], &GPIO_InitStruct);
 
-  HAL_GPIO_Init(USARTx_RX_GPIO_PORT, &GPIO_InitStruct);
+    /* UART RX GPIO pin configuration  */
+    GPIO_InitStruct.Pin = GPIO_RX_Pin[index];
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 
-  GPIO_InitStruct.Pin = USARTx_RX_PIN2;
-  HAL_GPIO_Init(USARTx_RX_GPIO_PORT, &GPIO_InitStruct);
-  
+    HAL_GPIO_Init(GPIO_Port[index], &GPIO_InitStruct);
+  }
+
   /*##-3- Configure the NVIC for UART ########################################*/
-  HAL_NVIC_SetPriority(USARTx_IRQn, 2, 0);
-  HAL_NVIC_EnableIRQ(USARTx_IRQn);
-  HAL_NVIC_SetPriority(USARTx_IRQn2, 2, 1);
-  HAL_NVIC_EnableIRQ(USARTx_IRQn2);
+  {
+    HAL_NVIC_SetPriority(USART_IRQn[index], 2, index);
+    HAL_NVIC_EnableIRQ(USART_IRQn[index]);
 
-  /* Enable DMAx clock */
-  DMAx_CLK_ENABLE();
-  
+    /* Enable DMAx clock */
+    DMAx_CLK_ENABLE();
+  }
+
   /*##-4- Configure the DMA streams ##########################################*/
   /* Configure the DMA handler for Transmission process */
   {
-    DMA_HandleTypeDef* tx = NULL;
-    if (huart->Instance == USARTx) {
-      tx = &hdma_tx;
-      tx->Instance                 = USARTx_TX_DMA_STREAM;
-    } else {
-      tx = &hdma_tx2;
-      tx->Instance                 = USARTx_TX_DMA_STREAM2;
-    }
+    DMA_HandleTypeDef* tx = &hdma_tx[index];
+
+    tx->Instance = DMA_TX_Stream[index];
     tx->Init.Direction           = DMA_MEMORY_TO_PERIPH;
     tx->Init.PeriphInc           = DMA_PINC_DISABLE;
     tx->Init.MemInc              = DMA_MINC_ENABLE;
@@ -116,22 +105,13 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
     HAL_DMA_Init(tx);
 
     /* Associate the initialized DMA handle to the UART handle */
-    if (huart->Instance == USARTx) {
-      __HAL_LINKDMA(huart, hdmatx, hdma_tx);
-    } else {
-      __HAL_LINKDMA(huart, hdmatx, hdma_tx2);
-    }
+    __HAL_LINKDMA(huart, hdmatx, hdma_tx[index]);
   }
 
   {
-    DMA_HandleTypeDef* rx = NULL;
-    if (huart->Instance == USARTx) {
-      rx = &hdma_rx;
-      rx->Instance                 = USARTx_RX_DMA_STREAM;
-    } else {
-      rx = &hdma_rx2;
-      rx->Instance                 = USARTx_RX_DMA_STREAM2;
-    }
+    DMA_HandleTypeDef* rx = &hdma_rx[index];
+
+    rx->Instance = DMA_RX_Stream[index];
     rx->Init.Direction           = DMA_PERIPH_TO_MEMORY;
     rx->Init.PeriphInc           = DMA_PINC_DISABLE;
     rx->Init.MemInc              = DMA_MINC_ENABLE;
@@ -143,32 +123,62 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
     HAL_DMA_Init(rx);
 
     /* Associate the initialized DMA handle to the UART handle */
-    if (huart->Instance == USARTx) {
-      __HAL_LINKDMA(huart, hdmarx, hdma_rx);
-    } else {
-      __HAL_LINKDMA(huart, hdmarx, hdma_rx2);
-    }
+    __HAL_LINKDMA(huart, hdmarx, hdma_rx[index]);
   }
   
   /*##-5- Configure the NVIC for DMA #########################################*/   
   /* NVIC configuration for DMA transfer complete interrupt (USARTx_TX) */
-  if (huart->Instance == USARTx) {
-    HAL_NVIC_SetPriority(USARTx_DMA_TX_IRQn, 6, 0);
-    HAL_NVIC_EnableIRQ(USARTx_DMA_TX_IRQn);
-  } else {
-    HAL_NVIC_SetPriority(USARTx_DMA_TX_IRQn2, 6, 1);
-    HAL_NVIC_EnableIRQ(USARTx_DMA_TX_IRQn2);
+  {
+    HAL_NVIC_SetPriority(USART_DMA_IRQn[index], 6, index);
+    HAL_NVIC_EnableIRQ(USART_DMA_IRQn[index]);
   }
-  
-  /*##-6- Enable TIM peripherals Clock #######################################*/
-  TIMx_CLK_ENABLE();
-  
-  /*##-7- Configure the NVIC for TIMx ########################################*/
-  /* Set Interrupt Group Priority */ 
-  HAL_NVIC_SetPriority(TIMx_IRQn, 6, 2);
-  
-  /* Enable the TIMx global Interrupt */
-  HAL_NVIC_EnableIRQ(TIMx_IRQn);
+}
+
+static void UART_DeInit_Internal(UART_HandleTypeDef *huart, uint32_t index) {
+    /* Disable the NVIC for UART/DMA */
+    HAL_NVIC_DisableIRQ(USART_IRQn[index]);
+    HAL_NVIC_DisableIRQ(USART_DMA_IRQn[index]);
+
+    /* Reset peripherals */
+    if (huart->Instance == USART1) {
+        USART1_FORCE_RESET();
+        USART1_RELEASE_RESET();
+    } else if (huart->Instance == USART2) {
+        USART2_FORCE_RESET();
+        USART2_RELEASE_RESET();
+    } else {
+        USART3_FORCE_RESET();
+        USART3_RELEASE_RESET();
+    }
+
+    /* Disable peripherals and GPIO Clocks */
+    HAL_GPIO_DeInit(GPIO_Port[index], GPIO_TX_Pin[index]);
+    HAL_GPIO_DeInit(GPIO_Port[index], GPIO_RX_Pin[index]);
+
+    hdma_tx[index].Instance = DMA_TX_Stream[index];
+    hdma_rx[index].Instance = DMA_RX_Stream[index];
+    HAL_DMA_DeInit(&hdma_tx[index]);
+    HAL_DMA_DeInit(&hdma_rx[index]);
+}
+
+/**
+  * @brief UART MSP Initialization
+  *        This function configures the hardware resources used in this example:
+  *           - Peripheral's clock enable
+  *           - Peripheral's GPIO Configuration
+  *           - NVIC configuration for UART interrupt request enable
+  * @param huart: UART handle pointer
+  * @retval None
+  */
+void HAL_UART_MspInit(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART1) {
+        UART_Init_Internal(huart, 0);
+    } else if (huart->Instance == USART2) {
+        UART_Init_Internal(huart, 1);
+    } else {
+        UART_Init_Internal(huart, 2);
+    }
 }
 
 /**
@@ -181,44 +191,13 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
   */
 void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
 {
-    if (huart->Instance == USARTx) {
-        /*##-0- Disable the NVIC for UART/DMA ######################################*/
-        HAL_NVIC_DisableIRQ(USARTx_IRQn);
-        HAL_NVIC_DisableIRQ(USARTx_DMA_TX_IRQn);
-
-        /*##-1- Reset peripherals ##################################################*/
-        USARTx_FORCE_RESET();
-        USARTx_RELEASE_RESET();
-
-        /*##-2- Disable peripherals and GPIO Clocks #################################*/
-        /* Configure UART Tx as alternate function  */
-        HAL_GPIO_DeInit(USARTx_TX_GPIO_PORT, USARTx_TX_PIN);
-        /* Configure UART Rx as alternate function  */
-        HAL_GPIO_DeInit(USARTx_RX_GPIO_PORT, USARTx_RX_PIN);
-
-        hdma_tx.Instance                 = USARTx_TX_DMA_STREAM;
-        hdma_rx.Instance                 = USARTx_RX_DMA_STREAM;
-        HAL_DMA_DeInit(&hdma_tx);
-        HAL_DMA_DeInit(&hdma_rx);
+    if (huart->Instance == USART1) {
+        UART_DeInit_Internal(huart, 0);
+    } else if (huart->Instance == USART2) {
+        UART_DeInit_Internal(huart, 1);
     } else {
-        HAL_NVIC_DisableIRQ(USARTx_IRQn2);
-        HAL_NVIC_DisableIRQ(USARTx_DMA_TX_IRQn2);
-
-        USARTx_FORCE_RESET2();
-        USARTx_RELEASE_RESET2();
-
-        HAL_GPIO_DeInit(USARTx_TX_GPIO_PORT, USARTx_TX_PIN2);
-        HAL_GPIO_DeInit(USARTx_RX_GPIO_PORT, USARTx_RX_PIN2);
-
-        hdma_tx2.Instance                 = USARTx_TX_DMA_STREAM2;
-        hdma_rx2.Instance                 = USARTx_RX_DMA_STREAM2;
-        HAL_DMA_DeInit(&hdma_tx2);
-        HAL_DMA_DeInit(&hdma_rx2);
+        UART_DeInit_Internal(huart, 2);
     }
-  
-    /*##-4- Reset TIM peripheral ###############################################*/
-    TIMx_FORCE_RESET();
-    TIMx_RELEASE_RESET();
 }
 
 /**
