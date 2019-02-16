@@ -59,7 +59,7 @@
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Common Config */
-#define USBD_MAX_NUM_INTERFACES               5 /*USBD_HID_IF_NUM*/
+#define USBD_MAX_NUM_INTERFACES               7 /*USBD_I2C_IF_NUM*/
 #define USBD_MAX_NUM_CONFIGURATION            1
 #define USBD_MAX_STR_DESC_SIZ                 0x100
 #define USBD_SUPPORT_USER_STRING              0
