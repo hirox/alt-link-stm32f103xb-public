@@ -73,8 +73,6 @@ static uint32_t CMD_EP[] = {CDC_CMD_EP, CDC_CMD_EP2, CDC_CMD_EP3};
 extern const uint32_t InPacketSize[];
 extern const uint32_t OutPacketSize[];
 
-#define NUM_CDC (3)
-
 void USBD_CDC_Init (USBD_HandleTypeDef *pdev, uint8_t cfgidx) {
     (void) cfgidx;
 

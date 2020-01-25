@@ -1,6 +1,7 @@
 TOOLCHAIN_PREFIX ?= arm-none-eabi
 AS               = $(TOOLCHAIN_PREFIX)-as
 CC               = $(TOOLCHAIN_PREFIX)-gcc
+CXX              = $(TOOLCHAIN_PREFIX)-g++
 CPP              = $(TOOLCHAIN_PREFIX)-cpp
 LD               = $(TOOLCHAIN_PREFIX)-gcc
 OBJCOPY          = $(TOOLCHAIN_PREFIX)-objcopy

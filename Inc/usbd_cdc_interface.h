@@ -106,7 +106,6 @@
 /* Definition for USARTx's DMA: used for transmitting data over Tx pin */
 #define USART3_TX_DMA_STREAM             DMA1_Channel2
 #define USART3_RX_DMA_STREAM             DMA1_Channel3
-#define USART3_DMA_TX_IRQHandler         DMA1_Channel2_IRQHandler
 #define USART3_DMA_TX_IRQn               DMA1_Channel2_IRQn
 
 /* Definition for TIMx clock resources */
@@ -138,6 +137,35 @@
 #define I2Cx_ER_IRQn                    I2C1_ER_IRQn
 #define I2Cx_EV_IRQHandler              I2C1_EV_IRQHandler
 #define I2Cx_ER_IRQHandler              I2C1_ER_IRQHandler
+
+/* Definition for SPIx clock resources */
+#define SPIx                             SPI1
+#define SPIx_CLK_ENABLE()                __HAL_RCC_SPI1_CLK_ENABLE()
+#define SPIx_SCK_GPIO_CLK_ENABLE()       __HAL_RCC_GPIOA_CLK_ENABLE()
+#define SPIx_MISO_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOA_CLK_ENABLE()
+#define SPIx_MOSI_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOA_CLK_ENABLE()
+#define SPIx_CS_GPIO_CLK_ENABLE()        __HAL_RCC_GPIOB_CLK_ENABLE()
+#define SPIx_INT_GPIO_CLK_ENABLE()       __HAL_RCC_GPIOB_CLK_ENABLE()
+
+/* Definition for SPIx Pins */
+#define SPIx_SCK_PIN                     GPIO_PIN_5
+#define SPIx_SCK_GPIO_PORT               GPIOA
+#define SPIx_MISO_PIN                    GPIO_PIN_6
+#define SPIx_MISO_GPIO_PORT              GPIOA
+#define SPIx_MOSI_PIN                    GPIO_PIN_7
+#define SPIx_MOSI_GPIO_PORT              GPIOA
+
+#define MCP2515_CS_PIN                   GPIO_PIN_0
+#define MCP2515_CS_PORT                  GPIOB
+#define MCP2515_INT_PIN                  GPIO_PIN_1
+#define MCP2515_INT_PORT                 GPIOB
+
+/* Definition for SPI1's DMA */
+#define SPI1_TX_DMA_STREAM               DMA1_Channel3
+#define SPI1_RX_DMA_STREAM               DMA1_Channel2
+
+/* Definition for SPIx's NVIC */
+#define SPIx_IRQn                        SPI1_IRQn
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */

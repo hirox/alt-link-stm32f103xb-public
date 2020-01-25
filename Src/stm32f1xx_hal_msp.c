@@ -262,4 +262,137 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef *hi2c)
   HAL_GPIO_DeInit(I2Cx_SDA_GPIO_PORT, I2Cx_SDA_PIN);
 }
 
+static void SPI_DMA_Init(SPI_HandleTypeDef *hspi) {
+    /* Enable DMAx clock */
+    DMAx_CLK_ENABLE();
+
+    uint32_t index = 2;
+
+    /*## Configure the DMA streams ##########################################*/
+    /* Configure the DMA handler for Transmission process */
+    {
+        DMA_HandleTypeDef* tx = &hdma_tx[index];
+
+        tx->Instance                 = SPI1_TX_DMA_STREAM;
+        tx->Init.Direction           = DMA_MEMORY_TO_PERIPH;
+        tx->Init.PeriphInc           = DMA_PINC_DISABLE;
+        tx->Init.MemInc              = DMA_MINC_ENABLE;
+        tx->Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+        tx->Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+        tx->Init.Mode                = DMA_NORMAL;
+        tx->Init.Priority            = DMA_PRIORITY_LOW;
+
+        HAL_DMA_Init(tx);
+
+        /* Associate the initialized DMA handle to the UART handle */
+        __HAL_LINKDMA(hspi, hdmatx, hdma_tx[index]);
+    }
+
+    {
+        DMA_HandleTypeDef* rx = &hdma_rx[index];
+
+        rx->Instance                 = SPI1_RX_DMA_STREAM;
+        rx->Init.Direction           = DMA_PERIPH_TO_MEMORY;
+        rx->Init.PeriphInc           = DMA_PINC_DISABLE;
+        rx->Init.MemInc              = DMA_MINC_ENABLE;
+        rx->Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+        rx->Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+        rx->Init.Mode                = DMA_NORMAL;
+        rx->Init.Priority            = DMA_PRIORITY_LOW;
+
+        HAL_DMA_Init(rx);
+
+        /* Associate the initialized DMA handle to the UART handle */
+        __HAL_LINKDMA(hspi, hdmarx, hdma_rx[index]);
+    }
+
+    /*## Configure the NVIC for DMA #########################################*/
+    /* NVIC configuration for DMA transfer complete interrupt (USARTx_TX) */
+    {
+        HAL_NVIC_SetPriority(SPI1_IRQn, 6, index);
+        HAL_NVIC_EnableIRQ(SPI1_IRQn);
+    }
+}
+
+/**
+  * @brief SPI MSP Initialization
+  *        This function configures the hardware resources used in this example:
+  *           - Peripheral's clock enable
+  *           - Peripheral's GPIO Configuration
+  *           - NVIC configuration for SPI interrupt request enable
+  * @param hspi: SPI handle pointer
+  * @retval None
+  */
+void HAL_SPI_MspInit(SPI_HandleTypeDef *hspi)
+{
+  GPIO_InitTypeDef  GPIO_InitStruct;
+
+  if (hspi->Instance == SPIx)
+  {
+    /*##-1- Enable peripherals and GPIO Clocks #################################*/
+    /* Enable GPIO TX/RX clock */
+    SPIx_SCK_GPIO_CLK_ENABLE();
+    SPIx_MISO_GPIO_CLK_ENABLE();
+    SPIx_MOSI_GPIO_CLK_ENABLE();
+    /* Enable SPI clock */
+    SPIx_CLK_ENABLE();
+
+    /*##-2- Configure peripheral GPIO ##########################################*/
+    /* SPI SCK GPIO pin configuration  */
+    GPIO_InitStruct.Pin       = SPIx_SCK_PIN;
+    GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull      = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(SPIx_SCK_GPIO_PORT, &GPIO_InitStruct);
+
+    /* SPI MISO GPIO pin configuration  */
+    GPIO_InitStruct.Pin = SPIx_MISO_PIN;
+    HAL_GPIO_Init(SPIx_MISO_GPIO_PORT, &GPIO_InitStruct);
+
+    /* SPI MOSI GPIO pin configuration  */
+    GPIO_InitStruct.Pin = SPIx_MOSI_PIN;
+    HAL_GPIO_Init(SPIx_MOSI_GPIO_PORT, &GPIO_InitStruct);
+
+    /*##-3- Configure the NVIC for SPI #########################################*/
+    /* NVIC for SPI */
+    HAL_NVIC_SetPriority(SPIx_IRQn, 1, 0);
+    HAL_NVIC_EnableIRQ(SPIx_IRQn);
+
+    /*##-4- Initialize DMA */
+    SPI_DMA_Init(hspi);
+  }
+}
+
+/**
+  * @brief SPI MSP De-Initialization
+  *        This function frees the hardware resources used in this example:
+  *          - Disable the Peripheral's clock
+  *          - Revert GPIO and NVIC configuration to their default state
+  * @param hspi: SPI handle pointer
+  * @retval None
+  */
+void HAL_SPI_MspDeInit(SPI_HandleTypeDef *hspi)
+{
+  if(hspi->Instance == SPIx)
+  {
+    /*##-1- Disable peripherals and GPIO Clocks ################################*/
+    /* Configure SPI SCK as alternate function  */
+    HAL_GPIO_DeInit(SPIx_SCK_GPIO_PORT, SPIx_SCK_PIN);
+    /* Configure SPI MISO as alternate function  */
+    HAL_GPIO_DeInit(SPIx_MISO_GPIO_PORT, SPIx_MISO_PIN);
+    /* Configure SPI MOSI as alternate function  */
+    HAL_GPIO_DeInit(SPIx_MOSI_GPIO_PORT, SPIx_MOSI_PIN);
+
+    /*##-2- Disable the NVIC for SPI ###########################################*/
+    HAL_NVIC_DisableIRQ(SPIx_IRQn);
+
+    /*##-3- De-Initialize DMA ###########################################*/
+    uint32_t index = 2;
+    hdma_tx[index].Instance = SPI1_TX_DMA_STREAM;
+    hdma_rx[index].Instance = SPI1_RX_DMA_STREAM;
+    HAL_DMA_DeInit(&hdma_tx[index]);
+    HAL_DMA_DeInit(&hdma_rx[index]);
+  }
+}
+
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

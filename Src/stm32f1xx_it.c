@@ -68,6 +68,7 @@ extern UART_HandleTypeDef UartHandle[3];
 extern TIM_HandleTypeDef TimHandle[];
 
 extern I2C_HandleTypeDef i2c_handle;
+extern SPI_HandleTypeDef SpiHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -207,9 +208,14 @@ void USART2_DMA_TX_IRQHandler(void)
   HAL_DMA_IRQHandler(UartHandle[1].hdmatx);
 }
 
-void USART3_DMA_TX_IRQHandler(void)
+extern uint32_t IsMcp2515Exist;
+
+void DMA1_Channel2_IRQHandler(void)
 {
-  HAL_DMA_IRQHandler(UartHandle[2].hdmatx);
+  if (IsMcp2515Exist)
+    HAL_DMA_IRQHandler(SpiHandle.hdmatx);
+  else
+    HAL_DMA_IRQHandler(UartHandle[2].hdmatx);
 }
 
 /**
@@ -272,6 +278,22 @@ void I2Cx_EV_IRQHandler(void)
 void I2Cx_ER_IRQHandler(void)
 {
   HAL_I2C_ER_IRQHandler(&i2c_handle);
+}
+
+/**
+  * @brief  Handle SPI interrupt request.
+  */
+void SPI1_IRQHandler(void)
+{
+  HAL_SPI_IRQHandler(&SpiHandle);
+}
+
+/**
+  * @brief  Handle external line 1 interrupt request.
+  */
+void EXTI1_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(MCP2515_INT_PIN);
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

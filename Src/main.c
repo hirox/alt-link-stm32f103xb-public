@@ -54,6 +54,7 @@
 extern const USBD_ClassTypeDef USBD_HANDLER;
 
 void I2C_Run_In_Thread_Mode();
+void SPI_Init();
 
 /** @addtogroup STM32F1xx_HAL_Validation
   * @{
@@ -87,6 +88,9 @@ int main(void)
 
     /* Configure the system clock to 72 MHz */
     SystemClock_Config();
+
+    /* Initialize SPI and check existence */
+    SPI_Init();
 
     /* Init Device Library */
     USBD_Init(&USBD_Device, &HID_Desc, 0);

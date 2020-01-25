@@ -49,7 +49,7 @@
 #include "stm32f1xx_ll_tim.h"
 #include "usbd_cdc_interface.h"
 
-#define NUM_CDC (3)
+extern uint32_t IsMcp2515Exist;
 
 USBD_CDC_LineCodingTypeDef LineCoding[] = {
     {
@@ -116,9 +116,10 @@ const USBD_CDC_ItfTypeDef USBD_CDC_fops =
 
 static void Clear_Buffer_Status(uint32_t i) {
     CDC.d[i].UserTxBufPtrOut = 0;
-    CDC.d[i].RxOverWriteSize = 0;
-    CDC.d[i].RxBufWritePos = 0;
-    CDC.d[i].RxBufReadPos = 0;
+    CDC.d[i].UsbOutOverWriteSize = 0;
+    CDC.d[i].UsbOutBufWritePos = 0;
+    CDC.d[i].UsbOutBufReadPos = 0;
+    CDC.d[i].UsbOutBufReadPosInOverwrite = 0;
     CDC.d[i].Run_Receive_From_HOST = 1;
 }
 
@@ -147,6 +148,10 @@ static void Uart_Receive_DMA(uint32_t i) {
 static int8_t CDC_Itf_Init(void)
 {
     for (uint32_t i = 0; i < NUM_CDC; i++) {
+        if (i == SLCAN_INDEX && IsMcp2515Exist) {
+            continue;
+        }
+
         /*##-1- Configure the UART peripheral ######################################*/
         /* Put the USART peripheral in the Asynchronous mode (UART Mode) */
         /* USART configured as follow:
@@ -254,8 +259,7 @@ static int8_t CDC_Itf_Control(uint32_t index, uint8_t cmd, uint8_t* pbuf, uint16
         lc.format     = pbuf[4];
         lc.paritytype = pbuf[5];
         lc.datatype   = pbuf[6];
-        
-        
+
         LineCoding[i] = lc;
         CDC.d[i].Run_PortConfig = 1;
     }
@@ -304,11 +308,17 @@ static int8_t CDC_Itf_Control(uint32_t index, uint8_t cmd, uint8_t* pbuf, uint16
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     (void)htim;
-    CDC.Run_TIM = 1;
+    for (uint32_t i = 0; i < NUM_CDC; i++) {
+        if (htim == &TimHandle[i]) {
+            CDC.d[i].Run_TIM = 1;
+            break;
+        }
+    }
 }
 
+// USB OUT
 static void CDC_Receive(uint32_t i) {
-    USBD_CDC_ReceivePacket(i, &CDC.d[i].UserRxBuffer[CDC.d[i].RxBufWritePos & (APP_RX_DATA_SIZE - 1)], &USBD_Device);
+    USBD_CDC_ReceivePacket(i, &CDC.d[i].UsbOutBuffer[CDC.d[i].UsbOutBufWritePos & (APP_RX_DATA_SIZE - 1)], &USBD_Device);
 }
 
 /**
@@ -326,15 +336,15 @@ static int8_t CDC_Itf_Receive(uint32_t index, uint32_t len)
     if (i >= NUM_CDC)
         i = (NUM_CDC - 1);
 
-    int32_t overwrite = (signed)(CDC.d[i].RxBufWritePos & (APP_RX_DATA_SIZE - 1)) + len - APP_RX_DATA_SIZE;
+    int32_t overwrite = (signed)(CDC.d[i].UsbOutBufWritePos & (APP_RX_DATA_SIZE - 1)) + len - APP_RX_DATA_SIZE;
     if (overwrite > 0) {
-        CDC.d[i].RxOverWriteSize = (unsigned)overwrite;
+        CDC.d[i].UsbOutOverWriteSize = (unsigned)overwrite;
     }
 
-    CDC.d[i].RxBufWritePos += len;
+    CDC.d[i].UsbOutBufWritePos += len;
 
     // If empty space is larger than 128, it is possible to allocate continuous 64 bytes
-    if (APP_RX_DATA_SIZE - OutPacketSize[i] * 2 >= (CDC.d[i].RxBufWritePos - CDC.d[i].RxBufReadPos)) {
+    if (APP_RX_DATA_SIZE - OutPacketSize[i] * 2 >= (CDC.d[i].UsbOutBufWritePos - CDC.d[i].UsbOutBufReadPos)) {
         CDC_Receive(i);
     } else {
         CDC.d[i].Run_Receive_From_HOST = 1;
@@ -343,15 +353,15 @@ static int8_t CDC_Itf_Receive(uint32_t index, uint32_t len)
     return (USBD_OK);
 }
 
-// USB OUT -> UART DMA
+// UART DMA TX (USB OUT -> UART)
 static void UART_DMA_Transmit(uint32_t i) {
-    uint32_t buffsize = CDC.d[i].RxBufWritePos - CDC.d[i].RxBufReadPos;
-    uint32_t maxsize = APP_RX_DATA_SIZE + CDC.d[i].RxOverWriteSize - (CDC.d[i].RxBufReadPos & (APP_RX_DATA_SIZE - 1));
+    uint32_t buffsize = CDC.d[i].UsbOutBufWritePos - CDC.d[i].UsbOutBufReadPos;
+    uint32_t maxsize = APP_RX_DATA_SIZE + CDC.d[i].UsbOutOverWriteSize - (CDC.d[i].UsbOutBufReadPos & (APP_RX_DATA_SIZE - 1));
     if (buffsize > maxsize) {
         buffsize = maxsize;
-        CDC.d[i].RxOverWriteSize = 0;
+        CDC.d[i].UsbOutOverWriteSize = 0;
     }
-    HAL_UART_Transmit_DMA(&UartHandle[i], &CDC.d[i].UserRxBuffer[CDC.d[i].RxBufReadPos & (APP_RX_DATA_SIZE - 1)], buffsize);
+    HAL_UART_Transmit_DMA(&UartHandle[i], &CDC.d[i].UsbOutBuffer[CDC.d[i].UsbOutBufReadPos & (APP_RX_DATA_SIZE - 1)], buffsize);
 }
 
 /**
@@ -364,9 +374,9 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
     // inside UART IRQ
     uint32_t i = huart->Index;
 
-    CDC.d[i].RxBufReadPos += huart->TxXferSize;
+    CDC.d[i].UsbOutBufReadPos += huart->TxXferSize;
 
-    if (CDC.d[i].RxBufReadPos != CDC.d[i].RxBufWritePos) {
+    if (CDC.d[i].UsbOutBufReadPos != CDC.d[i].UsbOutBufWritePos) {
         // kick DMA transfer inside IRQ
         UART_DMA_Transmit(i);
     } else {
@@ -450,27 +460,11 @@ static void Uart_Config(uint32_t index)
     }
 }
 
-#if 0
-static void Slcan_Config()
-{
-    USBD_CDC_LineCodingTypeDef* lc = &LineCoding[2];
-
-    CAN_DeInit();
-
-    /* ignore stop bit format */
-    /* ignore parity bit type */
-    /* ignore data type */
-
-    //handle->Init.BaudRate = lc->bitrate;
-    CAN_Config();
-}
-#endif
-
 // Receive USB OUT Packet
 void CDC_Receive_From_HOST(uint32_t i) {
     if (CDC.d[i].Run_Receive_From_HOST) {
         // If empty space is larger than 128, it is possible to allocate continuous 64 bytes
-        if (APP_RX_DATA_SIZE - OutPacketSize[i] * 2 >= (CDC.d[i].RxBufWritePos - CDC.d[i].RxBufReadPos)) {
+        if (APP_RX_DATA_SIZE - OutPacketSize[i] * 2 >= (CDC.d[i].UsbOutBufWritePos - CDC.d[i].UsbOutBufReadPos)) {
             HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
             CDC.d[i].Run_Receive_From_HOST = 0;
             CDC_Receive(i);
@@ -479,11 +473,7 @@ void CDC_Receive_From_HOST(uint32_t i) {
     }
 }
 
-void CDC_Send_To_HOST(uint32_t i, uint32_t force) {
-    if (USBD_CDC_TxState(i) != USBD_OK)
-        return;
-
-    uint32_t ptrIn = TX_BUF_PTR_IN(i);
+static void CDC_Send_To_HOST(uint32_t i, uint32_t ptrIn, uint32_t force) {
     if (CDC.d[i].UserTxBufPtrOut != ptrIn &&
         (force || (ptrIn - CDC.d[i].UserTxBufPtrOut) >= InPacketSize[i] ||
         ptrIn < CDC.d[i].UserTxBufPtrOut)) {
@@ -518,36 +508,73 @@ void CDC_Send_To_HOST(uint32_t i, uint32_t force) {
     }
 }
 
-// noinline is necessary to output correct code
-__NOINLINE void CDC_Run_In_Thread_Mode()
+static void UART_Send_To_HOST(uint32_t i, uint32_t force) {
+    if (USBD_CDC_TxState(i) != USBD_OK)
+        return;
+
+    uint32_t ptrIn = TX_BUF_PTR_IN(i);
+    CDC_Send_To_HOST(i, ptrIn, force);
+}
+
+uint32_t SLCAN_GetWritePos();
+
+static void SLCAN_Send_To_HOST(uint32_t i) {
+    if (USBD_CDC_TxState(i) != USBD_OK)
+        return;
+
+    uint32_t ptrIn = SLCAN_GetWritePos();
+    CDC_Send_To_HOST(i, ptrIn, 1);
+}
+
+static void Run_In_Thread_Mode(uint32_t i) {
+    if (CDC.d[i].Run_PortConfig) {
+        CDC.d[i].Run_PortConfig = 0;
+        Uart_Config(i);
+        Uart_Receive_DMA(i);
+    }
+
+    // Run UART TX with DMA
+    if (CDC.d[i].Run_DMA_Transfer && CDC.d[i].UsbOutBufReadPos != CDC.d[i].UsbOutBufWritePos) {
+        HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
+        CDC.d[i].Run_DMA_Transfer = 0;
+        UART_DMA_Transmit(i);
+        HAL_NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
+    }
+
+    CDC_Receive_From_HOST(i);
+
+    uint32_t force = CDC.d[i].Run_TIM;
+    if (force)
+        CDC.d[i].Run_TIM = 0;
+    UART_Send_To_HOST(i, force);
+}
+
+void SLCAN_Init();
+void SLCAN_Run_In_Thread_Mode();
+
+void CDC_Run_In_Thread_Mode()
 {
-#if 1
-    for (uint32_t i = 0; i < NUM_CDC; i++) {
+    if (IsMcp2515Exist) {
+        for (uint32_t i = 0; i < NUM_CDC; i++) {
+            if (i != SLCAN_INDEX)
+                Run_In_Thread_Mode(i);
+        }
+
+        const uint32_t i = SLCAN_INDEX;
         if (CDC.d[i].Run_PortConfig) {
             CDC.d[i].Run_PortConfig = 0;
-            Uart_Config(i);
-            Uart_Receive_DMA(i);
+            Clear_Buffer_Status(i);
+            SLCAN_Init();
         }
 
-        // Run UART TX with DMA
-        if (CDC.d[i].Run_DMA_Transfer && CDC.d[i].RxBufReadPos != CDC.d[i].RxBufWritePos) {
-            HAL_NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
-            CDC.d[i].Run_DMA_Transfer = 0;
-            UART_DMA_Transmit(i);
-            HAL_NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
-        }
+        SLCAN_Run_In_Thread_Mode();
 
         CDC_Receive_From_HOST(i);
+        SLCAN_Send_To_HOST(i);
+    } else {
+        for (uint32_t i = 0; i < NUM_CDC; i++)
+            Run_In_Thread_Mode(i);
     }
-#endif
-#if 1
-    uint32_t force = CDC.Run_TIM;
-    if (force)
-        CDC.Run_TIM = 0;
-    for (uint32_t i = 0; i < NUM_CDC; i++) {
-        CDC_Send_To_HOST(i, force);
-    }
-#endif
 }
 
 static const uint32_t TIM_IRQn[] = {TIM2_IRQn, TIM3_IRQn, TIM4_IRQn};
@@ -558,7 +585,7 @@ static TIM_TypeDef * const TIM[] = {TIM2, TIM3, TIM4};
   * @retval None.
   */
 static void TIM_Config(uint32_t i)
-{  
+{
     /* Enable TIM peripheral clock */
     if (i == 0) {
         TIM2_CLK_ENABLE();
